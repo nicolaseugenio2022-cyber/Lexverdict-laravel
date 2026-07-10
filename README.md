@@ -4,11 +4,11 @@ Modern Laravel rebuild of the LexVerdict prosecutor office case-management syste
 
 ## Current Milestone
 
-M1 - Identity and authorization foundation.
+M2 - Case data foundation.
 
-This repository contains the M0 technical baseline plus the M1 identity/authentication foundation: username-based staff login, exact legacy staff role values, active/deactivated staff accounts, staff and prosecutor profiles, mandatory one-to-one Prosecutor-Secretary assignments, assignment history, audit events, admin user management, assignment management, role-aware navigation, and M1 authorization tests.
+This repository contains the M0 technical baseline, the M1 identity/authentication foundation, and the M2 case data foundation: offense catalog management, PostgreSQL case data tables, atomic docket allocation, secure PIN issuance/reset, Secretary-created pending cases assigned from the current Prosecutor-Secretary pairing, party snapshots, subpoena revision snapshots, audit events, and M2 PostgreSQL tests.
 
-Case/subpoena, docket, PIN, resolution, public lookup, document, report, and legal workflow features are not implemented in M1.
+Case UI, subpoena review transitions, resolution workflow, public lookup, document generation, reports, and M3+ legal workflow features are not implemented in M2.
 
 ## Authoritative Documentation
 
@@ -34,6 +34,7 @@ The read-only legacy reference is:
 - `docs/m0/ADR-0004-prosecutor-secretary-assignment.md`
 - `docs/m0/ADR-0005-private-document-storage.md`
 - `docs/m1/IMPLEMENTATION_SUMMARY.md`
+- `docs/m2/IMPLEMENTATION_SUMMARY.md`
 - `docs/m0/LOCAL_SETUP.md`
 
 ## Domain Preservation
