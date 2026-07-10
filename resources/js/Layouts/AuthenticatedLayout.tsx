@@ -14,6 +14,7 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
 
     const navItems: NavItem[] = [
         { label: 'Dashboard', href: '/dashboard', show: true },
+        { label: 'Cases', href: '/cases', show: auth.can.case_management },
         { label: 'Users', href: '/admin/users', show: auth.can.manage_users },
         { label: 'Assignments', href: '/admin/assignments', show: auth.can.manage_assignments },
     ];

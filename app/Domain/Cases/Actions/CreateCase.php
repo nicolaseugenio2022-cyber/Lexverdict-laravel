@@ -68,71 +68,104 @@ class CreateCase
                 throw new CaseDataInvariantException('Secretary must be assigned to a Prosecutor.');
             }
 
-            $date = $this->date($data['date']);
-            $hearingDate1 = $this->optionalDateTime($data['hearing_date_1'] ?? null);
-            $hearingDate2 = $this->optionalDateTime($data['hearing_date_2'] ?? null);
-
-            if ($hearingDate1 && $hearingDate2 && $hearingDate2->lessThanOrEqualTo($hearingDate1)) {
-                throw new CaseDataInvariantException('Hearing Date 2 must be after Hearing Date 1.');
-            }
-
-            $offenseIds = array_values(array_unique($data['offense_ids']));
-            $offenseCount = count($offenseIds);
-
-            if ($offenseCount < 1) {
-                throw new CaseDataInvariantException('Please select at least one crime.');
-            }
-
-            $activeOffenseCount = Offense::query()
-                ->whereIn('id', $offenseIds)
-                ->where('is_active', true)
-                ->count();
-
-            if ($activeOffenseCount !== $offenseCount) {
-                throw new CaseDataInvariantException('Every selected crime must exist and be active.');
-            }
-
-            $this->assertParties($data['parties']);
-
-            $allocation = $this->dockets->allocate($date, $offenseCount);
-            $issuedPin = $this->pins->generate();
-
-            $case = LegalCase::create([
-                'docket_number' => $allocation->docketNumber,
-                'date' => $date->toDateString(),
-                'hearing_date_1' => $hearingDate1,
-                'hearing_date_2' => $hearingDate2,
-                'police_station' => trim($data['police_station']),
-                'assigned_prosecutor_id' => $assignment->prosecutor_user_id,
-                'created_by_user_id' => $secretary->id,
-                'subpoena_status' => SubpoenaStatus::Pending->value,
-                'pin_hash' => $issuedPin['hash'],
-                'pin_issued_at' => now(),
-                'revision_number' => 1,
-            ]);
-
-            $case->offenses()->attach($offenseIds);
-
-            foreach ($data['parties'] as $index => $partyData) {
-                $this->createParty($case, $partyData, $index + 1);
-            }
-
-            SubpoenaRevision::create([
-                'case_id' => $case->id,
-                'revision_number' => 1,
-                'payload' => $this->revisionPayload($case, $date, $hearingDate1, $hearingDate2, $offenseIds, $data['parties']),
-                'submitted_by' => $secretary->id,
-                'submitted_at' => now(),
-            ]);
-
-            $this->audit->record('case.created', $secretary, LegalCase::class, $case->id, [
-                'docket_number' => $case->docket_number,
-                'assigned_prosecutor_id' => $case->assigned_prosecutor_id,
-                'offense_count' => $offenseCount,
-            ]);
-
-            return ['case' => $case, 'pin' => $issuedPin['pin']];
+            return $this->persist($data, $secretary, $assignment->prosecutor_user_id);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{case: LegalCase, pin: string}
+     */
+    public function createForAdmin(array $data, User $admin): array
+    {
+        return DB::transaction(function () use ($data, $admin): array {
+            $admin = User::query()->lockForUpdate()->findOrFail($admin->id);
+
+            if (! $admin->hasRole(StaffRole::Superuser) || ! $admin->is_active) {
+                throw new CaseDataInvariantException('Only an active Administrator can create a case for a selected Prosecutor.');
+            }
+
+            $prosecutorId = (string) ($data['assigned_prosecutor_id'] ?? '');
+            $prosecutor = User::query()->lockForUpdate()->findOrFail($prosecutorId);
+
+            if (! $prosecutor->hasRole(StaffRole::Prosecutor) || ! $prosecutor->is_active) {
+                throw new CaseDataInvariantException('Case creation requires an active Prosecutor.');
+            }
+
+            return $this->persist($data, $admin, $prosecutor->id);
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{case: LegalCase, pin: string}
+     */
+    private function persist(array $data, User $actor, string $assignedProsecutorId): array
+    {
+        $date = $this->date($data['date']);
+        $hearingDate1 = $this->optionalDateTime($data['hearing_date_1'] ?? null);
+        $hearingDate2 = $this->optionalDateTime($data['hearing_date_2'] ?? null);
+
+        if ($hearingDate1 && $hearingDate2 && $hearingDate2->lessThanOrEqualTo($hearingDate1)) {
+            throw new CaseDataInvariantException('Hearing Date 2 must be after Hearing Date 1.');
+        }
+
+        $offenseIds = array_values(array_unique($data['offense_ids']));
+        $offenseCount = count($offenseIds);
+
+        if ($offenseCount < 1) {
+            throw new CaseDataInvariantException('Please select at least one crime.');
+        }
+
+        $activeOffenseCount = Offense::query()
+            ->whereIn('id', $offenseIds)
+            ->where('is_active', true)
+            ->count();
+
+        if ($activeOffenseCount !== $offenseCount) {
+            throw new CaseDataInvariantException('Every selected crime must exist and be active.');
+        }
+
+        $this->assertParties($data['parties']);
+
+        $allocation = $this->dockets->allocate($date, $offenseCount);
+        $issuedPin = $this->pins->generate();
+
+        $case = LegalCase::create([
+            'docket_number' => $allocation->docketNumber,
+            'date' => $date->toDateString(),
+            'hearing_date_1' => $hearingDate1,
+            'hearing_date_2' => $hearingDate2,
+            'police_station' => trim($data['police_station']),
+            'assigned_prosecutor_id' => $assignedProsecutorId,
+            'created_by_user_id' => $actor->id,
+            'subpoena_status' => SubpoenaStatus::Pending->value,
+            'pin_hash' => $issuedPin['hash'],
+            'pin_issued_at' => now(),
+            'revision_number' => 1,
+        ]);
+
+        $case->offenses()->attach($offenseIds);
+
+        foreach ($data['parties'] as $index => $partyData) {
+            $this->createParty($case, $partyData, $index + 1);
+        }
+
+        SubpoenaRevision::create([
+            'case_id' => $case->id,
+            'revision_number' => 1,
+            'payload' => $this->revisionPayload($case, $date, $hearingDate1, $hearingDate2, $offenseIds, $data['parties']),
+            'submitted_by' => $actor->id,
+            'submitted_at' => now(),
+        ]);
+
+        $this->audit->record('case.created', $actor, LegalCase::class, $case->id, [
+            'docket_number' => $case->docket_number,
+            'assigned_prosecutor_id' => $case->assigned_prosecutor_id,
+            'offense_count' => $offenseCount,
+        ]);
+
+        return ['case' => $case, 'pin' => $issuedPin['pin']];
     }
 
     private function date(CarbonInterface|string $value): CarbonImmutable

@@ -14,6 +14,7 @@ export type PageProps = {
             manage_users: boolean;
             manage_assignments: boolean;
             process_server_scope: boolean;
+            case_management: boolean;
         };
     };
     flash: {

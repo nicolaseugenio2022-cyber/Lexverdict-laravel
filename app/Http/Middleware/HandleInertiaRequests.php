@@ -54,6 +54,7 @@ class HandleInertiaRequests extends Middleware
                     'manage_users' => $user?->can('manage-users') ?? false,
                     'manage_assignments' => $user?->can('manage-assignments') ?? false,
                     'process_server_scope' => $user?->can('process-server-scope') ?? false,
+                    'case_management' => $user !== null && ! $user->can('process-server-scope'),
                 ],
             ],
             'flash' => [
