@@ -96,4 +96,10 @@ class LegalCase extends Model
     {
         return $this->hasMany(SubpoenaRevision::class, 'case_id');
     }
+
+    /** @return HasMany<SubpoenaDecision, $this> */
+    public function subpoenaDecisions(): HasMany
+    {
+        return $this->hasMany(SubpoenaDecision::class, 'case_id');
+    }
 }

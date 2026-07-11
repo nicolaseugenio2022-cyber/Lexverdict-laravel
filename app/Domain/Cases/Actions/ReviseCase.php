@@ -62,6 +62,7 @@ class ReviseCase
                 'hearing_date_1' => $hearingDate1,
                 'hearing_date_2' => $hearingDate2,
                 'police_station' => trim((string) $data['police_station']),
+                'subpoena_status' => SubpoenaStatus::Pending->value,
                 'revision_number' => $case->revision_number + 1,
             ]);
 

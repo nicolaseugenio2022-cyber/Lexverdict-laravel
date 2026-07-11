@@ -2,6 +2,7 @@
 
 namespace App\Domain\Cases\Actions;
 
+use App\Domain\Cases\Enums\SubpoenaStatus;
 use App\Domain\Identity\Enums\StaffRole;
 use App\Models\LegalCase;
 use App\Models\ProsecutorSecretaryAssignment;
@@ -58,10 +59,33 @@ class CaseAccess
         return $this->assignedProsecutorIdForSecretary($user) === $case->assigned_prosecutor_id;
     }
 
+    public function canAccessReviewQueue(User $user): bool
+    {
+        return $user->is_active && $user->hasRole(StaffRole::Prosecutor);
+    }
+
+    public function canViewReview(User $user, LegalCase $case): bool
+    {
+        return $this->canAccessReviewQueue($user)
+            && $case->assigned_prosecutor_id === $user->id
+            && $case->created_by_user_id !== $user->id;
+    }
+
+    public function canReview(User $user, LegalCase $case): bool
+    {
+        return $this->canViewReview($user, $case)
+            && $this->subpoenaStatusValue($case->subpoena_status) === SubpoenaStatus::Pending->value;
+    }
+
     public function assignedProsecutorIdForSecretary(User $secretary): ?string
     {
         return ProsecutorSecretaryAssignment::query()
             ->where('secretary_user_id', $secretary->id)
             ->value('prosecutor_user_id');
+    }
+
+    private function subpoenaStatusValue(mixed $status): string
+    {
+        return $status instanceof SubpoenaStatus ? $status->value : (string) $status;
     }
 }

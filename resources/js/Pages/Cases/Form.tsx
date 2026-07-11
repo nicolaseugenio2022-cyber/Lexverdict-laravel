@@ -11,6 +11,7 @@ type Props = {
     prosecutors: ProsecutorOption[];
     partyRoles: Array<'Complainant' | 'Respondent'>;
     can_select_prosecutor: boolean;
+    denial_comments?: Array<{ revision_number: number; comment: string; decided_by: string | null; decided_at: string | null }>;
 };
 
 const blankParty = (role: 'Complainant' | 'Respondent'): CasePartyForm => ({
@@ -28,7 +29,7 @@ const blankParty = (role: 'Complainant' | 'Respondent'): CasePartyForm => ({
     region: '',
 });
 
-export default function Form({ mode, caseRecord, offenses, prosecutors, partyRoles, can_select_prosecutor }: Props) {
+export default function Form({ mode, caseRecord, offenses, prosecutors, partyRoles, can_select_prosecutor, denial_comments = [] }: Props) {
     const { flash } = usePage<PageProps>().props;
     const { data, setData, post, patch, processing, errors } = useForm({
         assigned_prosecutor_id: prosecutors[0]?.id ?? '',
@@ -95,6 +96,14 @@ export default function Form({ mode, caseRecord, offenses, prosecutors, partyRol
                         <p key={error} className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
                             {error}
                         </p>
+                    ))}
+
+                    {mode === 'edit' && denial_comments.map((denial) => (
+                        <div key={`${denial.revision_number}-${denial.decided_at}`} className="mt-4 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="status">
+                            <p className="font-semibold">Revision {denial.revision_number} denial comment</p>
+                            <p className="mt-2 whitespace-pre-wrap">{denial.comment}</p>
+                            <p className="mt-2 text-red-800">{denial.decided_by} | {denial.decided_at}</p>
+                        </div>
                     ))}
 
                     <div className="mt-5 grid gap-4 md:grid-cols-2">

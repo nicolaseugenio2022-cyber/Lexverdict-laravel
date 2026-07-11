@@ -25,8 +25,8 @@ This catalog is a source-referenced baseline for LexVerdict. It does not authori
 
 | Workflow | Legacy evidence | Preserved behavior | Status |
 |---|---|---|---|
-| Subpoena approval | `app/routes/admin_routes.py:541-555` and prosecutor routes | Sets subpoena `Status` to `Approved` and logs action | Confirmed |
-| Subpoena denial | `app/routes/admin_routes.py:558-584` | Requires nonblank comment, sets `Status` to `Denied`, records `DenialComment` with `Type = Subpoena`, logs action | Confirmed |
+| Subpoena approval | `app/routes/admin_routes.py:541-555`, prosecutor routes, and project-owner M4 decision | Only the assigned Prosecutor may transition a non-self-created subpoena from `Pending` to `Approved`; records immutable decision history | Confirmed |
+| Subpoena denial | `app/routes/admin_routes.py:558-584`, prosecutor routes, and project-owner M4 decision | Only the assigned Prosecutor may transition a non-self-created subpoena from `Pending` to `Denied`; requires nonblank comment and records immutable denial/decision history | Confirmed |
 | Subpoena edit/resubmit | `app/routes/admin_routes.py:672`, `app/routes/secret_routes.py:636-641` | Editing sets subpoena `Status` back to `Pending` and preserves denial feedback visibility | Confirmed |
 | Resolution submit | `app/routes/admin_routes.py:949-995`, `app/routes/secret_routes.py:859-899` | Rejects `Pending` verdict for submission, stores verdict/date/court, sets resolution `Status` to `Pending` | Confirmed |
 | Resolution approval | `app/routes/admin_routes.py:1005-1016` | Sets resolution `Status` to `Approved` and logs action | Confirmed |
@@ -44,6 +44,10 @@ This catalog is a source-referenced baseline for LexVerdict. It does not authori
 | One Prosecutor has exactly one Secretary and one Secretary has exactly one Prosecutor | `Overview.md` and project-owner confirmation | Mandatory one-to-one assignment invariant in M1 | Approved |
 | Do not migrate old mock transactional rows; create new mock data after workflows are complete | Project-owner decision before M0 | Migration plan excludes legacy mock subpoenas/resolutions/denial comments/audit rows | Approved |
 | Do not add `Awaiting Filing`, `Filed`, or other new filing statuses | Project-owner decision before M0 | Process Server visibility must derive from existing resolution `Verdict` and `Status` fields only | Approved |
+| Administrator review authority | Project-owner M4 decision | Administrator has global visibility and administrative management authority but no subpoena approval or denial authority solely from the Administrator role | Approved |
+| Assigned Prosecutor review authority | Project-owner M4 decision | Only the Prosecutor assigned to the case may approve or deny its subpoena | Approved |
+| Creator self-review | Project-owner M4 decision | The subpoena creator may not approve or deny their own submission | Approved |
+| Subpoena review transitions | Project-owner M4 decision | Review transitions are exactly `Pending` to `Approved` and `Pending` to `Denied`; no additional status is permitted | Approved |
 
 ## Blocked Clarifications
 
@@ -52,6 +56,4 @@ This catalog is a source-referenced baseline for LexVerdict. It does not authori
 | Exact verdict wording | Approved docs still list a conflict between project-owner wording `Filing` and legacy value `For Filing` | M5 resolution implementation must not choose or normalize until the project owner confirms the exact stored/UI value |
 | Case versus Subpoena aggregate | Approved docs say target representation is blocked pending approval | M2 schema cannot decide whether `case` and `subpoena` are one operational record or distinct concepts |
 | Process Server service scope | Approved docs say service-attempt recording is To confirm | Process Server mutation/service-result features cannot be implemented |
-| Admin versus prosecutor review hierarchy | Listed unresolved in `Business Rules.md` | M4 review policies require clarification |
-| Creator self-review | Listed unresolved in `Business Rules.md` | M4 review actions require clarification |
 | Retention and purge policy | Listed unresolved in multiple docs | No purge/destructive data features can be implemented |

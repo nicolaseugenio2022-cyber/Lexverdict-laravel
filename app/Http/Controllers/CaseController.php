@@ -16,6 +16,7 @@ use App\Models\AuditEvent;
 use App\Models\CaseParty;
 use App\Models\LegalCase;
 use App\Models\Offense;
+use App\Models\SubpoenaDecision;
 use App\Models\SubpoenaRevision;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -76,11 +77,12 @@ class CaseController extends Controller
     public function show(LegalCase $case, Request $request, CaseAccess $access): Response
     {
         abort_unless($access->canView($request->user(), $case), 403);
-        $case->load(['assignedProsecutor.staffProfile', 'createdBy.staffProfile', 'offenses', 'parties', 'subpoenaRevisions.submittedBy.staffProfile']);
+        $case->load(['assignedProsecutor.staffProfile', 'createdBy.staffProfile', 'offenses', 'parties', 'subpoenaRevisions.submittedBy.staffProfile', 'subpoenaDecisions.decidedBy.staffProfile']);
 
         return Inertia::render('Cases/Show', [
             'caseRecord' => $this->caseDetail($case),
             'timeline' => $this->timeline($case),
+            'decision_history' => $this->decisionHistory($case),
             'can_revise' => $access->canRevise($request->user(), $case),
             'case_pin' => session('case_pin'),
         ]);
@@ -89,7 +91,7 @@ class CaseController extends Controller
     public function edit(LegalCase $case, Request $request, CaseAccess $access): Response
     {
         abort_unless($access->canRevise($request->user(), $case), 403);
-        $case->load(['offenses', 'parties']);
+        $case->load(['offenses', 'parties', 'subpoenaDecisions.decidedBy.staffProfile']);
 
         return Inertia::render('Cases/Form', [
             'mode' => 'edit',
@@ -98,6 +100,7 @@ class CaseController extends Controller
             'prosecutors' => $this->prosecutorOptions(),
             'partyRoles' => [PartyRole::Complainant->value, PartyRole::Respondent->value],
             'can_select_prosecutor' => false,
+            'denial_comments' => $this->decisionHistory($case, true),
         ]);
     }
 
@@ -206,7 +209,30 @@ class CaseController extends Controller
                 'actor' => null,
             ]);
 
-        return $revisions->merge($audits)->sortBy(fn (array $event): ?string => $event['at'])->values()->all();
+        $decisions = collect($case->subpoenaDecisions->all())
+            ->map(fn (SubpoenaDecision $decision): array => [
+                'type' => 'decision',
+                'label' => 'Revision '.$decision->revision_number.' '.$this->subpoenaStatusValue($decision->decision),
+                'at' => $this->isoString($decision->decided_at),
+                'actor' => $decision->decidedBy?->staffProfile?->displayName() ?? $decision->decidedBy?->username,
+            ]);
+
+        return $revisions->merge($decisions)->merge($audits)->sortBy(fn (array $event): ?string => $event['at'])->values()->all();
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function decisionHistory(LegalCase $case, bool $denialsOnly = false): array
+    {
+        return $case->subpoenaDecisions
+            ->when($denialsOnly, fn ($decisions) => $decisions->where('decision', SubpoenaStatus::Denied))
+            ->sortByDesc('decided_at')
+            ->map(fn (SubpoenaDecision $decision): array => [
+                'revision_number' => $decision->revision_number,
+                'decision' => $this->subpoenaStatusValue($decision->decision),
+                'comment' => $decision->comment,
+                'decided_by' => $decision->decidedBy?->staffProfile?->displayName() ?? $decision->decidedBy?->username,
+                'decided_at' => $this->isoString($decision->decided_at),
+            ])->values()->all();
     }
 
     private function subpoenaStatusValue(mixed $status): string

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Identity\Enums\StaffRole;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -55,6 +56,7 @@ class HandleInertiaRequests extends Middleware
                     'manage_assignments' => $user?->can('manage-assignments') ?? false,
                     'process_server_scope' => $user?->can('process-server-scope') ?? false,
                     'case_management' => $user !== null && ! $user->can('process-server-scope'),
+                    'review_subpoenas' => $user?->hasRole(StaffRole::Prosecutor) ?? false,
                 ],
             ],
             'flash' => [

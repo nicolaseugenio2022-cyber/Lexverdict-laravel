@@ -14,9 +14,16 @@ type Props = {
     timeline: TimelineItem[];
     can_revise: boolean;
     case_pin: string | null;
+    decision_history: Array<{
+        revision_number: number;
+        decision: 'Approved' | 'Denied';
+        comment: string | null;
+        decided_by: string | null;
+        decided_at: string | null;
+    }>;
 };
 
-export default function Show({ caseRecord, timeline, can_revise, case_pin }: Props) {
+export default function Show({ caseRecord, timeline, can_revise, case_pin, decision_history }: Props) {
     return (
         <AuthenticatedLayout>
             <Head title={caseRecord.docket_number} />
@@ -82,6 +89,20 @@ export default function Show({ caseRecord, timeline, can_revise, case_pin }: Pro
                                 ))}
                             </div>
                         </Panel>
+
+                        {decision_history.length > 0 && (
+                            <Panel title="Subpoena Decision History">
+                                <ol className="space-y-3 text-sm">
+                                    {decision_history.map((decision) => (
+                                        <li key={`${decision.revision_number}-${decision.decided_at}`} className="rounded-md border border-slate-200 p-4">
+                                            <p className="font-semibold">Revision {decision.revision_number}: {decision.decision}</p>
+                                            <p className="mt-1 text-slate-600">{decision.decided_by} | {decision.decided_at}</p>
+                                            {decision.comment && <p className="mt-3 whitespace-pre-wrap rounded-md border border-red-200 bg-red-50 p-3 text-red-900">{decision.comment}</p>}
+                                        </li>
+                                    ))}
+                                </ol>
+                            </Panel>
+                        )}
                     </div>
 
                     <Panel title="Timeline">

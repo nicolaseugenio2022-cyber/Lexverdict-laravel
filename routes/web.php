@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CaseController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SubpoenaReviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('baseline');
@@ -18,6 +19,10 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::resource('cases', CaseController::class)->except(['destroy']);
+    Route::get('subpoena-reviews', [SubpoenaReviewController::class, 'index'])->name('subpoena-reviews.index');
+    Route::get('subpoena-reviews/{case}', [SubpoenaReviewController::class, 'show'])->name('subpoena-reviews.show');
+    Route::post('subpoena-reviews/{case}/approve', [SubpoenaReviewController::class, 'approve'])->name('subpoena-reviews.approve');
+    Route::post('subpoena-reviews/{case}/deny', [SubpoenaReviewController::class, 'deny'])->name('subpoena-reviews.deny');
 
     Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::resource('users', UserController::class)->except(['show', 'destroy']);
