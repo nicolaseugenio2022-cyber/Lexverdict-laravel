@@ -21,9 +21,20 @@ type Props = {
         decided_by: string | null;
         decided_at: string | null;
     }>;
+    resolution: {
+        id: string;
+        verdict: 'For Filing' | 'Dismissed' | 'Pending';
+        court: string | null;
+        verdict_date: string;
+        status: 'Pending' | 'Approved' | 'Denied';
+        revision_number: number;
+        report_eligible: boolean;
+    } | null;
+    can_submit_resolution: boolean;
+    can_revise_resolution: boolean;
 };
 
-export default function Show({ caseRecord, timeline, can_revise, case_pin, decision_history }: Props) {
+export default function Show({ caseRecord, timeline, can_revise, case_pin, decision_history, resolution, can_submit_resolution, can_revise_resolution }: Props) {
     return (
         <AuthenticatedLayout>
             <Head title={caseRecord.docket_number} />
@@ -103,6 +114,25 @@ export default function Show({ caseRecord, timeline, can_revise, case_pin, decis
                                 </ol>
                             </Panel>
                         )}
+
+                        <Panel title="Resolution">
+                            {resolution ? (
+                                <div className="space-y-4 text-sm">
+                                    <dl className="grid gap-3 sm:grid-cols-2">
+                                        <Detail label="Verdict" value={resolution.verdict} />
+                                        <Detail label="Status" value={resolution.status} />
+                                        <Detail label="Court" value={resolution.court ?? ''} />
+                                        <Detail label="Verdict Date" value={resolution.verdict_date} />
+                                    </dl>
+                                    <div className="flex flex-wrap gap-2">
+                                        <Link href={`/resolutions/${resolution.id}`} className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900">View Resolution</Link>
+                                        {can_revise_resolution && <Link href={`/resolutions/${resolution.id}/edit`} className="inline-flex min-h-11 items-center rounded-md bg-blue-900 px-4 font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900">Revise Resolution</Link>}
+                                    </div>
+                                </div>
+                            ) : can_submit_resolution ? (
+                                <Link href={`/cases/${caseRecord.id}/resolution/create`} className="inline-flex min-h-11 items-center rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900">Submit Resolution</Link>
+                            ) : <p className="text-sm text-slate-600">No Resolution submitted.</p>}
+                        </Panel>
                     </div>
 
                     <Panel title="Timeline">

@@ -4,11 +4,11 @@ Modern Laravel rebuild of the LexVerdict prosecutor office case-management syste
 
 ## Current Milestone
 
-M4 - Subpoena review.
+M5 - Resolution workflow.
 
-This repository contains the M0 technical baseline, M1 identity/authentication foundation, M2 case data foundation, M3 case UI and scoped access, and M4 Subpoena review workflow. M4 permits only the assigned Prosecutor to review a non-self-created pending Subpoena, supports only `Pending` to `Approved` or `Denied`, requires denial comments, and preserves immutable per-revision decision history.
+This repository contains the M0 technical baseline through the M5 Resolution workflow. M5 preserves the exact legacy Resolution Verdict and Status concepts, scoped Administrator/Secretary submission, Administrator-only review, conditional Court behavior, denial comments, immutable revision/decision history, and approved-outcome reporting inputs.
 
-Resolution workflow, Process Server service records, public lookup, document generation, reports, and M5+ legal workflow features are not implemented.
+Process Server service records, public lookup, document generation, reports, audit UI, and M6+ features are not implemented.
 
 ## Authoritative Documentation
 
@@ -37,6 +37,7 @@ The read-only legacy reference is:
 - `docs/m2/IMPLEMENTATION_SUMMARY.md`
 - `docs/m3/IMPLEMENTATION_SUMMARY.md`
 - `docs/m4/IMPLEMENTATION_SUMMARY.md`
+- `docs/m5/IMPLEMENTATION_SUMMARY.md`
 - `docs/m0/LOCAL_SETUP.md`
 
 ## Domain Preservation

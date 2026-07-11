@@ -49,6 +49,10 @@ This catalog is a source-referenced baseline for LexVerdict. It does not authori
 | Creator self-review | Project-owner M4 decision | The subpoena creator may not approve or deny their own submission | Approved |
 | Subpoena review transitions | Project-owner M4 decision | Review transitions are exactly `Pending` to `Approved` and `Pending` to `Denied`; no additional status is permitted | Approved |
 | Resolution verdict terminology | Project-owner legacy-authority decision | Preserve exact legacy `Resolution.Verdict` values `For Filing`, `Dismissed`, and `Pending`; never rename or normalize `For Filing` to `Filing` | Approved |
+| Resolution submission authority | Legacy `admin_routes.py:943-999`, `secret_routes.py:853-905`, and project-owner approved assignment scope | Administrator and scoped Secretary submit/revise; Prosecutor and Process Server cannot mutate Resolutions | Confirmed |
+| Resolution review authority | Legacy `admin_routes.py:1002-1054`; no Prosecutor/Secretary review route | Only Administrator approves or denies a pending Resolution; legacy permits Administrator self-review | Confirmed |
+| Resolution submission eligibility | Project-owner workflow clarification plus legacy Resolution linkage | Resolution submission requires an approved Subpoena; one current Resolution identity per case | Confirmed |
+| Resolution validation and transitions | Legacy forms/templates and `admin_routes.py:943-1103`, `secret_routes.py:853-952` | `Pending` verdict cannot be submitted; `For Filing` requires Court; `Dismissed` clears Court; pending/denied revision returns status to `Pending`; review transitions are `Pending` to `Approved` or `Denied` | Confirmed |
 
 ## Blocked Clarifications
 

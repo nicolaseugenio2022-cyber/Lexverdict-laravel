@@ -10,12 +10,18 @@ use App\Domain\Cases\Enums\SubpoenaStatus;
 use App\Domain\Cases\Exceptions\CaseDataInvariantException;
 use App\Domain\Cases\Queries\CaseListQuery;
 use App\Domain\Identity\Enums\StaffRole;
+use App\Domain\Resolutions\Actions\ResolutionAccess;
+use App\Domain\Resolutions\Enums\ResolutionStatus;
+use App\Domain\Resolutions\Enums\ResolutionVerdict;
 use App\Http\Requests\Cases\StoreCaseRequest;
 use App\Http\Requests\Cases\UpdateCaseRequest;
 use App\Models\AuditEvent;
 use App\Models\CaseParty;
 use App\Models\LegalCase;
 use App\Models\Offense;
+use App\Models\Resolution;
+use App\Models\ResolutionDecision;
+use App\Models\ResolutionRevision;
 use App\Models\SubpoenaDecision;
 use App\Models\SubpoenaRevision;
 use App\Models\User;
@@ -74,16 +80,20 @@ class CaseController extends Controller
             ->with('case_pin', $result['pin']);
     }
 
-    public function show(LegalCase $case, Request $request, CaseAccess $access): Response
+    public function show(LegalCase $case, Request $request, CaseAccess $access, ResolutionAccess $resolutionAccess): Response
     {
         abort_unless($access->canView($request->user(), $case), 403);
-        $case->load(['assignedProsecutor.staffProfile', 'createdBy.staffProfile', 'offenses', 'parties', 'subpoenaRevisions.submittedBy.staffProfile', 'subpoenaDecisions.decidedBy.staffProfile']);
+        $case->load(['assignedProsecutor.staffProfile', 'createdBy.staffProfile', 'offenses', 'parties', 'subpoenaRevisions.submittedBy.staffProfile', 'subpoenaDecisions.decidedBy.staffProfile', 'resolution.createdBy.staffProfile', 'resolution.revisions.submittedBy.staffProfile', 'resolution.decisions.decidedBy.staffProfile']);
+        $resolution = $case->resolution;
 
         return Inertia::render('Cases/Show', [
             'caseRecord' => $this->caseDetail($case),
             'timeline' => $this->timeline($case),
             'decision_history' => $this->decisionHistory($case),
             'can_revise' => $access->canRevise($request->user(), $case),
+            'resolution' => $resolution ? $this->resolutionSummary($resolution) : null,
+            'can_submit_resolution' => $resolution === null && $resolutionAccess->canSubmit($request->user(), $case),
+            'can_revise_resolution' => $resolution !== null && $resolutionAccess->canRevise($request->user(), $resolution),
             'case_pin' => session('case_pin'),
         ]);
     }
@@ -217,7 +227,58 @@ class CaseController extends Controller
                 'actor' => $decision->decidedBy?->staffProfile?->displayName() ?? $decision->decidedBy?->username,
             ]);
 
-        return $revisions->merge($decisions)->merge($audits)->sortBy(fn (array $event): ?string => $event['at'])->values()->all();
+        $resolutionRevisions = $case->resolution
+            ? collect($case->resolution->revisions->all())->map(fn (ResolutionRevision $revision): array => [
+                'type' => 'resolution_revision',
+                'label' => 'Resolution Revision '.$revision->revision_number,
+                'at' => $this->isoString($revision->submitted_at),
+                'actor' => $revision->submittedBy?->staffProfile?->displayName() ?? $revision->submittedBy?->username,
+            ])
+            : collect();
+
+        $resolutionDecisions = $case->resolution
+            ? collect($case->resolution->decisions->all())->map(fn (ResolutionDecision $decision): array => [
+                'type' => 'resolution_decision',
+                'label' => 'Resolution Revision '.$decision->revision_number.' '.$this->resolutionStatusValue($decision->decision),
+                'at' => $this->isoString($decision->decided_at),
+                'actor' => $decision->decidedBy?->staffProfile?->displayName() ?? $decision->decidedBy?->username,
+            ])
+            : collect();
+
+        $resolutionAudits = $case->resolution
+            ? AuditEvent::query()
+                ->where('subject_type', Resolution::class)
+                ->where('subject_id', $case->resolution->id)
+                ->get()
+                ->map(fn (AuditEvent $event): array => [
+                    'type' => 'audit',
+                    'label' => $event->event_type,
+                    'at' => $this->isoString($event->occurred_at),
+                    'actor' => null,
+                ])
+            : collect();
+
+        return $revisions
+            ->merge($decisions)
+            ->merge($resolutionRevisions)
+            ->merge($resolutionDecisions)
+            ->merge($audits)
+            ->merge($resolutionAudits)
+            ->sortBy(fn (array $event): ?string => $event['at'])->values()->all();
+    }
+
+    /** @return array<string, mixed> */
+    private function resolutionSummary(Resolution $resolution): array
+    {
+        return [
+            'id' => $resolution->id,
+            'verdict' => $this->resolutionVerdictValue($resolution->verdict),
+            'court' => $resolution->court,
+            'verdict_date' => $this->dateString($resolution->verdict_date),
+            'status' => $this->resolutionStatusValue($resolution->status),
+            'revision_number' => $resolution->revision_number,
+            'report_eligible' => $resolution->isReportEligible(),
+        ];
     }
 
     /** @return list<array<string, mixed>> */
@@ -238,6 +299,16 @@ class CaseController extends Controller
     private function subpoenaStatusValue(mixed $status): string
     {
         return $status instanceof SubpoenaStatus ? $status->value : (string) $status;
+    }
+
+    private function resolutionVerdictValue(mixed $verdict): string
+    {
+        return $verdict instanceof ResolutionVerdict ? $verdict->value : (string) $verdict;
+    }
+
+    private function resolutionStatusValue(mixed $status): string
+    {
+        return $status instanceof ResolutionStatus ? $status->value : (string) $status;
     }
 
     private function partyRoleValue(mixed $role): string

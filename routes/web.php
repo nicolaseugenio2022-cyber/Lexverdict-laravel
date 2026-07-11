@@ -5,6 +5,8 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CaseController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ResolutionController;
+use App\Http\Controllers\ResolutionReviewController;
 use App\Http\Controllers\SubpoenaReviewController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +25,16 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('subpoena-reviews/{case}', [SubpoenaReviewController::class, 'show'])->name('subpoena-reviews.show');
     Route::post('subpoena-reviews/{case}/approve', [SubpoenaReviewController::class, 'approve'])->name('subpoena-reviews.approve');
     Route::post('subpoena-reviews/{case}/deny', [SubpoenaReviewController::class, 'deny'])->name('subpoena-reviews.deny');
+
+    Route::get('cases/{case}/resolution/create', [ResolutionController::class, 'create'])->name('resolutions.create');
+    Route::post('cases/{case}/resolution', [ResolutionController::class, 'store'])->name('resolutions.store');
+    Route::get('resolutions/{resolution}', [ResolutionController::class, 'show'])->name('resolutions.show');
+    Route::get('resolutions/{resolution}/edit', [ResolutionController::class, 'edit'])->name('resolutions.edit');
+    Route::patch('resolutions/{resolution}', [ResolutionController::class, 'update'])->name('resolutions.update');
+    Route::get('resolution-reviews', [ResolutionReviewController::class, 'index'])->name('resolution-reviews.index');
+    Route::get('resolution-reviews/{resolution}', [ResolutionReviewController::class, 'show'])->name('resolution-reviews.show');
+    Route::post('resolution-reviews/{resolution}/approve', [ResolutionReviewController::class, 'approve'])->name('resolution-reviews.approve');
+    Route::post('resolution-reviews/{resolution}/deny', [ResolutionReviewController::class, 'deny'])->name('resolution-reviews.deny');
 
     Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::resource('users', UserController::class)->except(['show', 'destroy']);

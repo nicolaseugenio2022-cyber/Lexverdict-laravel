@@ -16,6 +16,7 @@ export type PageProps = {
             process_server_scope: boolean;
             case_management: boolean;
             review_subpoenas: boolean;
+            review_resolutions: boolean;
         };
     };
     flash: {

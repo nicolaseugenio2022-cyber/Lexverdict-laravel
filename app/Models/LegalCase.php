@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class LegalCase extends Model
 {
@@ -101,5 +102,11 @@ class LegalCase extends Model
     public function subpoenaDecisions(): HasMany
     {
         return $this->hasMany(SubpoenaDecision::class, 'case_id');
+    }
+
+    /** @return HasOne<Resolution, $this> */
+    public function resolution(): HasOne
+    {
+        return $this->hasOne(Resolution::class, 'case_id');
     }
 }

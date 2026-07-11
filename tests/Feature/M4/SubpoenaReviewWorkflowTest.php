@@ -16,7 +16,6 @@ use App\Models\SubpoenaDecision;
 use App\Models\SubpoenaRevision;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -283,7 +282,7 @@ class SubpoenaReviewWorkflowTest extends TestCase
         app(DecideSubpoena::class)->approve($case, $prosecutor, 1);
 
         try {
-            Artisan::call('migrate:rollback', ['--step' => 1, '--force' => true]);
+            $this->rollBackSubpoenaDecisionMigration();
             $this->fail('A populated decision-history migration must not roll back.');
         } catch (RuntimeException $exception) {
             $this->assertSame('Refusing to roll back subpoena decision history while records exist.', $exception->getMessage());
@@ -349,5 +348,15 @@ class SubpoenaReviewWorkflowTest extends TestCase
         }
 
         $this->assertTrue($rejected, 'The database should reject this operation.');
+    }
+
+    private function rollBackSubpoenaDecisionMigration(): void
+    {
+        $migration = require database_path('migrations/2026_07_10_000003_create_subpoena_decisions_table.php');
+        if (! is_object($migration) || ! method_exists($migration, 'down')) {
+            throw new LogicException('Subpoena decision migration could not be loaded.');
+        }
+
+        $migration->down();
     }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use LogicException;
 
 class AuditEvent extends Model
 {
@@ -31,5 +32,11 @@ class AuditEvent extends Model
             'changes' => 'array',
             'occurred_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(fn (): never => throw new LogicException('Audit history is immutable.'));
+        static::deleting(fn (): never => throw new LogicException('Audit history is immutable.'));
     }
 }
