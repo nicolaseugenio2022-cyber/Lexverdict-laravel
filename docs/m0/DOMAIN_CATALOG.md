@@ -48,12 +48,12 @@ This catalog is a source-referenced baseline for LexVerdict. It does not authori
 | Assigned Prosecutor review authority | Project-owner M4 decision | Only the Prosecutor assigned to the case may approve or deny its subpoena | Approved |
 | Creator self-review | Project-owner M4 decision | The subpoena creator may not approve or deny their own submission | Approved |
 | Subpoena review transitions | Project-owner M4 decision | Review transitions are exactly `Pending` to `Approved` and `Pending` to `Denied`; no additional status is permitted | Approved |
+| Resolution verdict terminology | Project-owner legacy-authority decision | Preserve exact legacy `Resolution.Verdict` values `For Filing`, `Dismissed`, and `Pending`; never rename or normalize `For Filing` to `Filing` | Approved |
 
 ## Blocked Clarifications
 
 | Topic | Conflict or gap | Why blocked |
 |---|---|---|
-| Exact verdict wording | Approved docs still list a conflict between project-owner wording `Filing` and legacy value `For Filing` | M5 resolution implementation must not choose or normalize until the project owner confirms the exact stored/UI value |
 | Case versus Subpoena aggregate | Approved docs say target representation is blocked pending approval | M2 schema cannot decide whether `case` and `subpoena` are one operational record or distinct concepts |
 | Process Server service scope | Approved docs say service-attempt recording is To confirm | Process Server mutation/service-result features cannot be implemented |
 | Retention and purge policy | Listed unresolved in multiple docs | No purge/destructive data features can be implemented |

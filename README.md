@@ -52,6 +52,7 @@ cd C:\Projects\Lexverdict-laravel
 Remove-Item Env:COMPOSER -ErrorAction SilentlyContinue
 composer install
 npm install
+composer format -- --test
 npm run lint
 npm run typecheck
 npm run build

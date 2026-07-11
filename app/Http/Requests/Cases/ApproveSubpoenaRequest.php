@@ -6,7 +6,7 @@ use App\Domain\Cases\Actions\CaseAccess;
 use App\Models\LegalCase;
 use Illuminate\Foundation\Http\FormRequest;
 
-class DenySubpoenaRequest extends FormRequest
+class ApproveSubpoenaRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -20,14 +20,6 @@ class DenySubpoenaRequest extends FormRequest
     /** @return array<string, list<string>> */
     public function rules(): array
     {
-        return [
-            'revision_number' => ['required', 'integer', 'min:1'],
-            'comment' => ['required', 'string'],
-        ];
-    }
-
-    protected function prepareForValidation(): void
-    {
-        $this->merge(['comment' => trim((string) $this->input('comment', ''))]);
+        return ['revision_number' => ['required', 'integer', 'min:1']];
     }
 }

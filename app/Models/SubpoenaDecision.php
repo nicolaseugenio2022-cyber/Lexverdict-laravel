@@ -6,6 +6,7 @@ use App\Domain\Cases\Enums\SubpoenaStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 class SubpoenaDecision extends Model
 {
@@ -34,6 +35,17 @@ class SubpoenaDecision extends Model
             'revision_number' => 'integer',
             'decided_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (): never {
+            throw new LogicException('Subpoena decision history is immutable.');
+        });
+
+        static::deleting(function (): never {
+            throw new LogicException('Subpoena decision history is immutable.');
+        });
     }
 
     /** @return BelongsTo<LegalCase, $this> */

@@ -284,7 +284,24 @@ class CreateCase
             'assigned_prosecutor_id' => $case->assigned_prosecutor_id,
             'subpoena_status' => SubpoenaStatus::Pending->value,
             'offense_ids' => $offenseIds,
+            'offenses' => $this->offenseSnapshot($offenseIds),
             'parties' => $parties,
         ];
+    }
+
+    /** @param list<string> $offenseIds
+     * @return list<array{id: string, name: string, law_reference: string|null}>
+     */
+    private function offenseSnapshot(array $offenseIds): array
+    {
+        return Offense::query()
+            ->whereIn('id', $offenseIds)
+            ->orderBy('name')
+            ->get(['id', 'name', 'law_reference'])
+            ->map(fn (Offense $offense): array => [
+                'id' => $offense->id,
+                'name' => $offense->name,
+                'law_reference' => $offense->law_reference,
+            ])->all();
     }
 }

@@ -65,5 +65,11 @@ jobs:
       - name: Frontend build
         run: npm run build
 
+      - name: PostgreSQL migration verification
+        run: |
+          php artisan migrate:fresh --env=testing --force
+          php artisan migrate:rollback --env=testing --step=1 --force
+          php artisan migrate --env=testing --force
+
       - name: Test
         run: php artisan test

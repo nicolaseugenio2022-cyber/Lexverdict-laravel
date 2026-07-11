@@ -10,25 +10,28 @@ use App\Models\SubpoenaDecision;
 use App\Models\SubpoenaRevision;
 use App\Models\User;
 use App\Support\AuditRecorder;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DecideSubpoena
 {
     public function __construct(private readonly AuditRecorder $audit) {}
 
-    public function approve(LegalCase $case, User $reviewer): SubpoenaDecision
+    public function approve(LegalCase $case, User $reviewer, int $expectedRevision, ?Request $request = null): SubpoenaDecision
     {
-        return $this->decide($case, $reviewer, SubpoenaStatus::Approved, null);
+        return $this->decide($case, $reviewer, $expectedRevision, SubpoenaStatus::Approved, null, $request);
     }
 
-    public function deny(LegalCase $case, User $reviewer, string $comment): SubpoenaDecision
+    public function deny(LegalCase $case, User $reviewer, int $expectedRevision, string $comment, ?Request $request = null): SubpoenaDecision
     {
-        return $this->decide($case, $reviewer, SubpoenaStatus::Denied, $comment);
+        return $this->decide($case, $reviewer, $expectedRevision, SubpoenaStatus::Denied, $comment, $request);
     }
 
-    private function decide(LegalCase $case, User $reviewer, SubpoenaStatus $decision, ?string $comment): SubpoenaDecision
+    private function decide(LegalCase $case, User $reviewer, int $expectedRevision, SubpoenaStatus $decision, ?string $comment, ?Request $request): SubpoenaDecision
     {
-        return DB::transaction(function () use ($case, $reviewer, $decision, $comment): SubpoenaDecision {
+        return DB::transaction(function () use ($case, $reviewer, $expectedRevision, $decision, $comment, $request): SubpoenaDecision {
+            /** @var User $reviewer */
+            $reviewer = User::query()->lockForUpdate()->findOrFail($reviewer->id);
             /** @var LegalCase $case */
             $case = LegalCase::query()->lockForUpdate()->findOrFail($case->id);
 
@@ -46,6 +49,10 @@ class DecideSubpoena
 
             if ($this->subpoenaStatusValue($case->subpoena_status) !== SubpoenaStatus::Pending->value) {
                 throw new CaseDataInvariantException('Only a Pending subpoena may be approved or denied.');
+            }
+
+            if ($expectedRevision !== $case->revision_number) {
+                throw new CaseDataInvariantException('This subpoena has a newer revision. Reload and review it before deciding.');
             }
 
             $revisionExists = SubpoenaRevision::query()
@@ -86,6 +93,7 @@ class DecideSubpoena
                     'from' => SubpoenaStatus::Pending->value,
                     'to' => $decision->value,
                 ],
+                $request,
             );
 
             return $record;

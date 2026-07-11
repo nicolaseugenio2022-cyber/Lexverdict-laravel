@@ -8,6 +8,7 @@ use App\Domain\Cases\Enums\PartyRole;
 use App\Domain\Cases\Enums\SubpoenaStatus;
 use App\Domain\Cases\Exceptions\CaseDataInvariantException;
 use App\Domain\Cases\Queries\SubpoenaReviewQuery;
+use App\Http\Requests\Cases\ApproveSubpoenaRequest;
 use App\Http\Requests\Cases\DenySubpoenaRequest;
 use App\Models\CaseParty;
 use App\Models\LegalCase;
@@ -63,12 +64,10 @@ class SubpoenaReviewController extends Controller
         ]);
     }
 
-    public function approve(LegalCase $case, Request $request, CaseAccess $access, DecideSubpoena $decisions): RedirectResponse
+    public function approve(ApproveSubpoenaRequest $request, LegalCase $case, DecideSubpoena $decisions): RedirectResponse
     {
-        abort_unless($access->canReview($request->user(), $case), 403);
-
         try {
-            $decisions->approve($case, $request->user());
+            $decisions->approve($case, $request->user(), (int) $request->validated('revision_number'), $request);
         } catch (CaseDataInvariantException $exception) {
             return back()->withErrors(['decision' => $exception->getMessage()]);
         }
@@ -79,7 +78,13 @@ class SubpoenaReviewController extends Controller
     public function deny(DenySubpoenaRequest $request, LegalCase $case, DecideSubpoena $decisions): RedirectResponse
     {
         try {
-            $decisions->deny($case, $request->user(), (string) $request->validated('comment'));
+            $decisions->deny(
+                $case,
+                $request->user(),
+                (int) $request->validated('revision_number'),
+                (string) $request->validated('comment'),
+                $request,
+            );
         } catch (CaseDataInvariantException $exception) {
             return back()->withErrors(['decision' => $exception->getMessage()]);
         }

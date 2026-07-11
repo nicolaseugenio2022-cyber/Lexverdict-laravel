@@ -5,10 +5,12 @@ namespace App\Domain\Cases\Actions;
 use App\Domain\Cases\Enums\PartyRole;
 use App\Domain\Cases\Enums\SubpoenaStatus;
 use App\Domain\Cases\Exceptions\CaseDataInvariantException;
+use App\Domain\Identity\Enums\StaffRole;
 use App\Models\CaseParty;
 use App\Models\LegalCase;
 use App\Models\Offense;
 use App\Models\Person;
+use App\Models\ProsecutorSecretaryAssignment;
 use App\Models\SubpoenaRevision;
 use App\Models\User;
 use App\Support\AuditRecorder;
@@ -26,8 +28,15 @@ class ReviseCase
     public function revise(LegalCase $case, array $data, User $actor): LegalCase
     {
         return DB::transaction(function () use ($case, $data, $actor): LegalCase {
+            /** @var User $actor */
+            $actor = User::query()->lockForUpdate()->findOrFail($actor->id);
             /** @var LegalCase $case */
             $case = LegalCase::query()->lockForUpdate()->findOrFail($case->id);
+
+            if (! $this->canReviseLockedCase($actor, $case)) {
+                throw new CaseDataInvariantException('You are not authorized to revise this case.');
+            }
+
             $expectedRevision = (int) $data['revision_number'];
 
             if ($expectedRevision !== $case->revision_number) {
@@ -85,6 +94,7 @@ class ReviseCase
                     'assigned_prosecutor_id' => $case->assigned_prosecutor_id,
                     'subpoena_status' => SubpoenaStatus::Pending->value,
                     'offense_ids' => $offenseIds,
+                    'offenses' => $this->offenseSnapshot($offenseIds),
                     'parties' => $parties,
                 ],
                 'submitted_by' => $actor->id,
@@ -103,6 +113,42 @@ class ReviseCase
     private function date(CarbonInterface|string $value): CarbonImmutable
     {
         return $value instanceof CarbonInterface ? CarbonImmutable::instance($value) : CarbonImmutable::parse($value)->startOfDay();
+    }
+
+    private function canReviseLockedCase(User $actor, LegalCase $case): bool
+    {
+        if (! $actor->is_active) {
+            return false;
+        }
+
+        if ($actor->hasRole(StaffRole::Superuser)) {
+            return true;
+        }
+
+        if (! $actor->hasRole(StaffRole::Secretary)) {
+            return false;
+        }
+
+        return ProsecutorSecretaryAssignment::query()
+            ->where('secretary_user_id', $actor->id)
+            ->lockForUpdate()
+            ->value('prosecutor_user_id') === $case->assigned_prosecutor_id;
+    }
+
+    /** @param list<string> $offenseIds
+     * @return list<array{id: string, name: string, law_reference: string|null}>
+     */
+    private function offenseSnapshot(array $offenseIds): array
+    {
+        return Offense::query()
+            ->whereIn('id', $offenseIds)
+            ->orderBy('name')
+            ->get(['id', 'name', 'law_reference'])
+            ->map(fn (Offense $offense): array => [
+                'id' => $offense->id,
+                'name' => $offense->name,
+                'law_reference' => $offense->law_reference,
+            ])->all();
     }
 
     private function optionalDateTime(CarbonInterface|string|null $value): ?CarbonImmutable

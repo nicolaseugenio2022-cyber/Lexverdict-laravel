@@ -48,6 +48,10 @@ class CaseAccess
 
     public function canRevise(User $user, LegalCase $case): bool
     {
+        if (! $user->is_active) {
+            return false;
+        }
+
         if ($user->hasRole(StaffRole::Superuser)) {
             return true;
         }

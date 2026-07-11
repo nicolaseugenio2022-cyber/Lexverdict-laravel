@@ -9,9 +9,11 @@ M4 implements the approved Subpoena review workflow only.
 - Creator self-review prohibition enforced in both HTTP authorization and the transactional domain action.
 - Exact review transitions only: `Pending` to `Approved` and `Pending` to `Denied`.
 - Required nonblank denial comment with exact `Subpoena` comment type.
-- Immutable per-revision Subpoena decision history with reviewer and decision time.
-- PostgreSQL constraints for approved decision values, denial comments, and one decision per revision.
-- Revision comparison, approve/deny controls, decision history, and denial feedback UI.
+- Immutable per-revision Subpoena decision history with reviewer and decision time, enforced by application guards and a PostgreSQL append-only trigger.
+- PostgreSQL constraints for approved decision values, denial comments, one decision per revision, and a composite foreign key to the reviewed revision.
+- Revision comparison with readable historical crime/party snapshots, approve/deny controls, decision history, and denial feedback UI.
+- Expected-revision conflict checks prevent a stale review page from deciding an unseen revision.
+- Reviewer role/activity and Secretary revision scope are revalidated under transaction locks.
 - Revision/resubmission returns the current Subpoena status to `Pending` while retaining prior decisions and comments.
 - Administrator global case visibility remains available without Subpoena approve/deny authority.
 - M4 authorization and workflow feature tests for all approved and denied paths.

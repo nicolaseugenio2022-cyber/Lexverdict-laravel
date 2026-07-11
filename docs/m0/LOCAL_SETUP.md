@@ -40,7 +40,7 @@ If your local PostgreSQL password is not `postgres`, update `.env.testing` local
 
 ```powershell
 Remove-Item Env:COMPOSER -ErrorAction SilentlyContinue
-composer format
+composer format -- --test
 composer analyse
 npm run lint
 npm run typecheck
