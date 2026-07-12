@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
 
 class AuditEvent extends Model
@@ -38,5 +39,11 @@ class AuditEvent extends Model
     {
         static::updating(fn (): never => throw new LogicException('Audit history is immutable.'));
         static::deleting(fn (): never => throw new LogicException('Audit history is immutable.'));
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function actor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'actor_user_id');
     }
 }

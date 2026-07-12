@@ -58,6 +58,8 @@ class HandleInertiaRequests extends Middleware
                     'case_management' => $user !== null && ! $user->can('process-server-scope'),
                     'review_subpoenas' => $user?->hasRole(StaffRole::Prosecutor) ?? false,
                     'review_resolutions' => $user?->hasRole(StaffRole::Superuser) ?? false,
+                    'view_reports' => $user?->can('view-reports') ?? false,
+                    'view_audit' => $user?->can('view-audit') ?? false,
                 ],
             ],
             'flash' => [

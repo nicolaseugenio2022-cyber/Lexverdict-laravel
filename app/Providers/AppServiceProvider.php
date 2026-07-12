@@ -25,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-users', fn (User $user): bool => $user->hasRole(StaffRole::Superuser));
         Gate::define('manage-assignments', fn (User $user): bool => $user->hasRole(StaffRole::Superuser));
         Gate::define('view-audit', fn (User $user): bool => $user->hasRole(StaffRole::Superuser));
+        Gate::define('view-reports', fn (User $user): bool => $user->hasRole(StaffRole::Superuser));
         Gate::define('process-server-scope', fn (User $user): bool => $user->hasRole(StaffRole::ProcessServer));
     }
 }

@@ -19,6 +19,8 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
         { label: 'Resolution Review', href: '/resolution-reviews', show: auth.can.review_resolutions },
         { label: 'Users', href: '/admin/users', show: auth.can.manage_users },
         { label: 'Assignments', href: '/admin/assignments', show: auth.can.manage_assignments },
+        { label: 'Reports', href: '/admin/reports', show: auth.can.view_reports },
+        { label: 'Audit', href: '/admin/audit', show: auth.can.view_audit },
     ];
 
     return (

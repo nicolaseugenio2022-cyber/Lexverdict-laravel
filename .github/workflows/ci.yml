@@ -72,7 +72,7 @@ jobs:
       - name: PostgreSQL migration verification
         run: |
           php artisan migrate:fresh --env=testing --force
-          php artisan migrate:rollback --env=testing --step=3 --force
+          php artisan migrate:rollback --env=testing --step=4 --force
           php artisan migrate --env=testing --force
 
       - name: Subpoena PDF visual baseline
@@ -80,6 +80,11 @@ jobs:
           python -m pip install --disable-pip-version-check pymupdf==1.28.0
           M6_VISUAL_OUTPUT=storage/framework/testing/m6-current.pdf php artisan test --filter=PublicLookupAndDocumentsTest
           python tests/visual/compare_subpoena_pdf.py tests/Fixtures/M6/approved-legacy-subpoena.pdf storage/framework/testing/m6-current.pdf
+
+      - name: Case Report PDF visual verification
+        run: |
+          M7_VISUAL_OUTPUT=storage/framework/testing/m7-case-report.pdf php artisan test --filter=ReportsAndAuditTest
+          python tests/visual/validate_case_report_pdf.py storage/framework/testing/m7-case-report.pdf
 
       - name: Test
         run: php artisan test

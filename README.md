@@ -4,11 +4,11 @@ Modern Laravel rebuild of the LexVerdict prosecutor office case-management syste
 
 ## Current Milestone
 
-M6 - Public lookup and documents.
+M7 - Reports and audit UI.
 
-This repository contains the M0 technical baseline through M6. M6 preserves the client-approved legacy Case Lookup projection and official Subpoena PDF, with hash-verified throttled lookup, private queued generation, versioning, checksums, scoped authorization, and audit history.
+This repository contains the M0 technical baseline through M7. M7 preserves the approved legacy Case Report eligibility, filters, terminology, and aggregate meanings while adding Administrator-only accessible charts/tables, audited PDF/CSV exports, and searchable redacted audit event detail.
 
-Process Server service records, reports, audit UI, and M7+ features are not implemented.
+Process Server service records and M8+ features are not implemented.
 
 ## Authoritative Documentation
 
@@ -39,6 +39,7 @@ The read-only legacy reference is:
 - `docs/m4/IMPLEMENTATION_SUMMARY.md`
 - `docs/m5/IMPLEMENTATION_SUMMARY.md`
 - `docs/m6/IMPLEMENTATION_SUMMARY.md`
+- `docs/m7/IMPLEMENTATION_SUMMARY.md`
 - `docs/m0/LOCAL_SETUP.md`
 
 ## Domain Preservation

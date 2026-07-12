@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Domain\Audit\AuditRedactor;
 use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -9,6 +10,8 @@ use Illuminate\Support\Str;
 
 class AuditRecorder
 {
+    public function __construct(private readonly AuditRedactor $redactor) {}
+
     /**
      * @param  array<string, mixed>|null  $changes
      */
@@ -31,7 +34,7 @@ class AuditRecorder
             'actor_user_id' => $actor?->id,
             'subject_type' => $subjectType,
             'subject_id' => $subjectId,
-            'changes' => $changes,
+            'changes' => $this->redactor->redact($changes),
             'ip_address' => $request?->ip(),
             'user_agent' => $request?->userAgent(),
             'correlation_id' => $correlationId,

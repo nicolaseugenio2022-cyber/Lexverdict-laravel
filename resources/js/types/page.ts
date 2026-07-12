@@ -17,6 +17,8 @@ export type PageProps = {
             case_management: boolean;
             review_subpoenas: boolean;
             review_resolutions: boolean;
+            view_reports: boolean;
+            view_audit: boolean;
         };
     };
     flash: {

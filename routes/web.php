@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\AssignmentController;
+use App\Http\Controllers\Admin\AuditEventController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CaseController;
@@ -50,5 +52,13 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::get('assignments', [AssignmentController::class, 'index'])->name('assignments.index');
         Route::post('assignments', [AssignmentController::class, 'store'])->name('assignments.store');
         Route::post('assignments/swap', [AssignmentController::class, 'swap'])->name('assignments.swap');
+
+        Route::middleware('cache.headers:no_store;max_age=0;private')->group(function (): void {
+            Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+            Route::get('reports/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
+            Route::get('reports/csv', [ReportController::class, 'csv'])->name('reports.csv');
+            Route::get('audit', [AuditEventController::class, 'index'])->name('audit.index');
+            Route::get('audit/{auditEvent}', [AuditEventController::class, 'show'])->name('audit.show');
+        });
     });
 });
