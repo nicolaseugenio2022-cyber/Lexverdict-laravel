@@ -23,6 +23,9 @@ class LegalCase extends Model
 
     protected $keyType = 'string';
 
+    /** @var list<string> */
+    protected $hidden = ['pin_hash', 'pin_document_secret'];
+
     /**
      * @var list<string>
      */
@@ -38,6 +41,7 @@ class LegalCase extends Model
         'pin_hash',
         'pin_issued_at',
         'pin_reset_at',
+        'pin_document_secret',
         'revision_number',
     ];
 
@@ -52,6 +56,7 @@ class LegalCase extends Model
             'hearing_date_2' => 'datetime',
             'pin_issued_at' => 'datetime',
             'pin_reset_at' => 'datetime',
+            'pin_document_secret' => 'encrypted',
             'revision_number' => 'integer',
             'subpoena_status' => SubpoenaStatus::class,
         ];
@@ -108,5 +113,11 @@ class LegalCase extends Model
     public function resolution(): HasOne
     {
         return $this->hasOne(Resolution::class, 'case_id');
+    }
+
+    /** @return HasMany<GeneratedDocument, $this> */
+    public function generatedDocuments(): HasMany
+    {
+        return $this->hasMany(GeneratedDocument::class, 'case_id');
     }
 }

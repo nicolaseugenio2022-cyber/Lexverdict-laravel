@@ -14,4 +14,4 @@ Subpoena PDFs and reports contain legal and personal data. Private storage preve
 
 ## Domain Preservation Impact
 
-This changes storage and access control only. Document names, wording, signature/seal requirements, and print layouts remain blocked until approved legal samples are provided.
+This changes storage and access control only. The project owner approved the validated legacy Python subpoena template and the official assets under `C:\Projects\LexVerdict\static` as the canonical M6 legal sample. Laravel must preserve its document name, wording, structure, field placement, layout, date formatting, return section, and behavior without redesign.

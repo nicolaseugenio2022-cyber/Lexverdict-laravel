@@ -141,6 +141,7 @@ class CreateCase
             'created_by_user_id' => $actor->id,
             'subpoena_status' => SubpoenaStatus::Pending->value,
             'pin_hash' => $issuedPin['hash'],
+            'pin_document_secret' => $issuedPin['pin'],
             'pin_issued_at' => now(),
             'revision_number' => 1,
         ]);

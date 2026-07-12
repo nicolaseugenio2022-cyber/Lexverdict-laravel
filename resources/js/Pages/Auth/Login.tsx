@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 
 export default function Login() {
@@ -54,6 +54,9 @@ export default function Login() {
                 >
                     Login
                 </button>
+                <Link href="/docket" className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-md border border-slate-300 px-4 font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900">
+                    Case Lookup
+                </Link>
             </form>
         </main>
     );

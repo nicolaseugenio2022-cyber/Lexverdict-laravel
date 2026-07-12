@@ -5,12 +5,16 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CaseController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PublicLookupController;
 use App\Http\Controllers\ResolutionController;
 use App\Http\Controllers\ResolutionReviewController;
+use App\Http\Controllers\SubpoenaDocumentController;
 use App\Http\Controllers\SubpoenaReviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('baseline');
+Route::get('/docket', [PublicLookupController::class, 'create'])->middleware('cache.headers:no_store;max_age=0;private')->name('public.lookup');
+Route::post('/docket', [PublicLookupController::class, 'store'])->middleware(['throttle:5,1', 'cache.headers:no_store;max_age=0;private'])->name('public.lookup.store');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -21,6 +25,8 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::resource('cases', CaseController::class)->except(['destroy']);
+    Route::post('cases/{case}/documents/subpoena', [SubpoenaDocumentController::class, 'store'])->name('documents.subpoena.store');
+    Route::get('cases/{case}/documents/{document}', [SubpoenaDocumentController::class, 'show'])->name('documents.show');
     Route::get('subpoena-reviews', [SubpoenaReviewController::class, 'index'])->name('subpoena-reviews.index');
     Route::get('subpoena-reviews/{case}', [SubpoenaReviewController::class, 'show'])->name('subpoena-reviews.show');
     Route::post('subpoena-reviews/{case}/approve', [SubpoenaReviewController::class, 'approve'])->name('subpoena-reviews.approve');

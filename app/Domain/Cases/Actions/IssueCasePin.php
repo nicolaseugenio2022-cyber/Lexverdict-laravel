@@ -27,6 +27,7 @@ class IssueCasePin
 
         $case->update([
             'pin_hash' => $issued['hash'],
+            'pin_document_secret' => $issued['pin'],
             'pin_reset_at' => now(),
             'pin_issued_at' => now(),
         ]);

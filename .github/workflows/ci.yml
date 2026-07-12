@@ -39,6 +39,10 @@ jobs:
           node-version: '22'
           cache: npm
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Install PHP dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
@@ -68,8 +72,14 @@ jobs:
       - name: PostgreSQL migration verification
         run: |
           php artisan migrate:fresh --env=testing --force
-          php artisan migrate:rollback --env=testing --step=2 --force
+          php artisan migrate:rollback --env=testing --step=3 --force
           php artisan migrate --env=testing --force
+
+      - name: Subpoena PDF visual baseline
+        run: |
+          python -m pip install --disable-pip-version-check pymupdf==1.28.0
+          M6_VISUAL_OUTPUT=storage/framework/testing/m6-current.pdf php artisan test --filter=PublicLookupAndDocumentsTest
+          python tests/visual/compare_subpoena_pdf.py tests/Fixtures/M6/approved-legacy-subpoena.pdf storage/framework/testing/m6-current.pdf
 
       - name: Test
         run: php artisan test

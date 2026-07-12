@@ -33,6 +33,7 @@ This catalog is a source-referenced baseline for LexVerdict. It does not authori
 | Resolution denial | `app/routes/admin_routes.py:1020-1049` | Requires nonblank comment, sets `Status` to `Denied`, records `DenialComment` with `Type = Resolution`, logs action | Confirmed |
 | Resolution edit/resubmit | `app/routes/admin_routes.py:1059-1102` | Only `For Filing` and `Dismissed` are accepted for edit/resubmit; status returns to `Pending` | Confirmed |
 | Public lookup | `app/routes/auth_routes.py:57-78`, `templates/case_lookup.html:150-169` | Requires exact docket number plus PIN; approved `For Filing` and approved `Dismissed` display final outcome, otherwise pending-like display | Confirmed |
+| Subpoena PDF | `app/routes/admin_routes.py:1105-1202`, `templates/Admin/subpoena_preview.html`, and project-owner M6 decision | Preserve the exact legacy document format, wording, structure, field placement, layout, date formatting, municipality grouping, footer/PIN behavior, and return section using the approved legacy logos/seals | Approved |
 | Reports | `app/routes/admin_routes.py:1245-1246`, `app/routes/admin_routes.py:1503-1504` | Include only `Verdict IN ('For Filing', 'Dismissed')` and `Resolution_Status = 'Approved'` | Confirmed |
 | Docket allocation | `app/routes/admin_routes.py:155-196`, `app/routes/admin_routes.py:359-402` | `III-09-INV-{YY}{A-L}-{NNNN}`; multi-offense reserves first and last serial in displayed docket | Confirmed |
 
@@ -53,6 +54,8 @@ This catalog is a source-referenced baseline for LexVerdict. It does not authori
 | Resolution review authority | Legacy `admin_routes.py:1002-1054`; no Prosecutor/Secretary review route | Only Administrator approves or denies a pending Resolution; legacy permits Administrator self-review | Confirmed |
 | Resolution submission eligibility | Project-owner workflow clarification plus legacy Resolution linkage | Resolution submission requires an approved Subpoena; one current Resolution identity per case | Confirmed |
 | Resolution validation and transitions | Legacy forms/templates and `admin_routes.py:943-1103`, `secret_routes.py:853-952` | `Pending` verdict cannot be submitted; `For Filing` requires Court; `Dismissed` clears Court; pending/denied revision returns status to `Pending`; review transitions are `Pending` to `Approved` or `Denied` | Confirmed |
+| Public lookup projection | Project-owner M6 decision approving legacy Case Lookup | Preserve exactly `Docket Number`, `Case Type`, `Prosecutor`, `1st Hearing`, `2nd Hearing`, `Status`, `Date Filed`, and conditional `Court Location`; reconstruct unavailable view logic from validated behavior without adding/removing/renaming fields | Approved |
+| Subpoena legal format and assets | Project-owner M6 decision approving legacy subpoena format and `C:\Projects\LexVerdict\static` assets | Legacy template and official images are canonical; no redesign, modernization, restyling, renaming, or legal-content alteration | Approved |
 
 ## Blocked Clarifications
 

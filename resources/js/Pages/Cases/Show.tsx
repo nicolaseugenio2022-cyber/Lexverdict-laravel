@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import type { CaseRecord } from './types';
 
@@ -32,9 +33,31 @@ type Props = {
     } | null;
     can_submit_resolution: boolean;
     can_revise_resolution: boolean;
+    documents: Array<{
+        id: string;
+        version: number;
+        template_version: string;
+        requested_by: string | null;
+        requested_at: string | null;
+        generated_at: string | null;
+        failed_at: string | null;
+        sha256: string | null;
+    }>;
+    can_generate_subpoena: boolean;
 };
 
-export default function Show({ caseRecord, timeline, can_revise, case_pin, decision_history, resolution, can_submit_resolution, can_revise_resolution }: Props) {
+export default function Show({ caseRecord, timeline, can_revise, case_pin, decision_history, resolution, can_submit_resolution, can_revise_resolution, documents, can_generate_subpoena }: Props) {
+    const [generating, setGenerating] = useState(false);
+
+    function generateSubpoena() {
+        if (generating) return;
+        setGenerating(true);
+        router.post(`/cases/${caseRecord.id}/documents/subpoena`, {}, {
+            preserveScroll: true,
+            onFinish: () => setGenerating(false),
+        });
+    }
+
     return (
         <AuthenticatedLayout>
             <Head title={caseRecord.docket_number} />
@@ -132,6 +155,30 @@ export default function Show({ caseRecord, timeline, can_revise, case_pin, decis
                             ) : can_submit_resolution ? (
                                 <Link href={`/cases/${caseRecord.id}/resolution/create`} className="inline-flex min-h-11 items-center rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900">Submit Resolution</Link>
                             ) : <p className="text-sm text-slate-600">No Resolution submitted.</p>}
+                        </Panel>
+
+                        <Panel title="Subpoena PDF">
+                            <div className="space-y-4 text-sm">
+                                {can_generate_subpoena && (
+                                    <button type="button" onClick={generateSubpoena} disabled={generating} className="min-h-11 rounded-md bg-blue-900 px-4 font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 disabled:cursor-not-allowed disabled:opacity-50">
+                                        {generating ? 'Generating' : 'Generate Subpoena PDF'}
+                                    </button>
+                                )}
+                                {documents.length === 0 ? <p className="text-slate-600">No generated Subpoena PDF.</p> : (
+                                    <ol className="space-y-3">
+                                        {documents.map((document) => (
+                                            <li key={document.id} className="rounded-md border border-slate-200 p-4">
+                                                <p className="font-semibold">Version {document.version}</p>
+                                                <p className="mt-1 text-slate-600">Requested by {document.requested_by || 'Unknown'} | {document.requested_at}</p>
+                                                {document.generated_at ? (
+                                                    <a href={`/cases/${caseRecord.id}/documents/${document.id}`} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-11 items-center font-semibold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900">View PDF</a>
+                                                ) : document.failed_at ? <p className="mt-2 font-medium text-red-700" role="status">Generation failed</p>
+                                                    : <p className="mt-2 font-medium text-amber-800" role="status">Generating</p>}
+                                            </li>
+                                        ))}
+                                    </ol>
+                                )}
+                            </div>
                         </Panel>
                     </div>
 

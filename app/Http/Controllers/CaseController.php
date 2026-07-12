@@ -9,6 +9,7 @@ use App\Domain\Cases\Enums\PartyRole;
 use App\Domain\Cases\Enums\SubpoenaStatus;
 use App\Domain\Cases\Exceptions\CaseDataInvariantException;
 use App\Domain\Cases\Queries\CaseListQuery;
+use App\Domain\Documents\DocumentAccess;
 use App\Domain\Identity\Enums\StaffRole;
 use App\Domain\Resolutions\Actions\ResolutionAccess;
 use App\Domain\Resolutions\Enums\ResolutionStatus;
@@ -17,6 +18,7 @@ use App\Http\Requests\Cases\StoreCaseRequest;
 use App\Http\Requests\Cases\UpdateCaseRequest;
 use App\Models\AuditEvent;
 use App\Models\CaseParty;
+use App\Models\GeneratedDocument;
 use App\Models\LegalCase;
 use App\Models\Offense;
 use App\Models\Resolution;
@@ -80,11 +82,12 @@ class CaseController extends Controller
             ->with('case_pin', $result['pin']);
     }
 
-    public function show(LegalCase $case, Request $request, CaseAccess $access, ResolutionAccess $resolutionAccess): Response
+    public function show(LegalCase $case, Request $request, CaseAccess $access, ResolutionAccess $resolutionAccess, DocumentAccess $documentAccess): Response
     {
         abort_unless($access->canView($request->user(), $case), 403);
-        $case->load(['assignedProsecutor.staffProfile', 'createdBy.staffProfile', 'offenses', 'parties', 'subpoenaRevisions.submittedBy.staffProfile', 'subpoenaDecisions.decidedBy.staffProfile', 'resolution.createdBy.staffProfile', 'resolution.revisions.submittedBy.staffProfile', 'resolution.decisions.decidedBy.staffProfile']);
+        $case->load(['assignedProsecutor.staffProfile', 'createdBy.staffProfile', 'offenses', 'parties', 'subpoenaRevisions.submittedBy.staffProfile', 'subpoenaDecisions.decidedBy.staffProfile', 'resolution.createdBy.staffProfile', 'resolution.revisions.submittedBy.staffProfile', 'resolution.decisions.decidedBy.staffProfile', 'generatedDocuments.requestedBy.staffProfile']);
         $resolution = $case->resolution;
+        $canGenerateDocument = $documentAccess->canGenerate($request->user(), $case);
 
         return Inertia::render('Cases/Show', [
             'caseRecord' => $this->caseDetail($case),
@@ -95,6 +98,17 @@ class CaseController extends Controller
             'can_submit_resolution' => $resolution === null && $resolutionAccess->canSubmit($request->user(), $case),
             'can_revise_resolution' => $resolution !== null && $resolutionAccess->canRevise($request->user(), $resolution),
             'case_pin' => session('case_pin'),
+            'documents' => $canGenerateDocument ? $case->generatedDocuments->sortByDesc('version')->map(fn (GeneratedDocument $document): array => [
+                'id' => $document->id,
+                'version' => $document->version,
+                'template_version' => $document->template_version,
+                'requested_by' => $document->requestedBy?->staffProfile?->displayName() ?? $document->requestedBy?->username,
+                'requested_at' => $this->isoString($document->requested_at),
+                'generated_at' => $this->isoString($document->generated_at),
+                'failed_at' => $this->isoString($document->failed_at),
+                'sha256' => $document->sha256,
+            ])->values()->all() : [],
+            'can_generate_subpoena' => $canGenerateDocument,
         ]);
     }
 

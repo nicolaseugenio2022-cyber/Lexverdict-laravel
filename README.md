@@ -4,11 +4,11 @@ Modern Laravel rebuild of the LexVerdict prosecutor office case-management syste
 
 ## Current Milestone
 
-M5 - Resolution workflow.
+M6 - Public lookup and documents.
 
-This repository contains the M0 technical baseline through the M5 Resolution workflow. M5 preserves the exact legacy Resolution Verdict and Status concepts, scoped Administrator/Secretary submission, Administrator-only review, conditional Court behavior, denial comments, immutable revision/decision history, and approved-outcome reporting inputs.
+This repository contains the M0 technical baseline through M6. M6 preserves the client-approved legacy Case Lookup projection and official Subpoena PDF, with hash-verified throttled lookup, private queued generation, versioning, checksums, scoped authorization, and audit history.
 
-Process Server service records, public lookup, document generation, reports, audit UI, and M6+ features are not implemented.
+Process Server service records, reports, audit UI, and M7+ features are not implemented.
 
 ## Authoritative Documentation
 
@@ -38,6 +38,7 @@ The read-only legacy reference is:
 - `docs/m3/IMPLEMENTATION_SUMMARY.md`
 - `docs/m4/IMPLEMENTATION_SUMMARY.md`
 - `docs/m5/IMPLEMENTATION_SUMMARY.md`
+- `docs/m6/IMPLEMENTATION_SUMMARY.md`
 - `docs/m0/LOCAL_SETUP.md`
 
 ## Domain Preservation
