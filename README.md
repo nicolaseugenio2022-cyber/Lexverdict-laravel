@@ -4,11 +4,11 @@ Modern Laravel rebuild of the LexVerdict prosecutor office case-management syste
 
 ## Current Milestone
 
-M7 - Reports and audit UI.
+M8 - Hardening, migration, and release readiness.
 
-This repository contains the M0 technical baseline through M7. M7 preserves the approved legacy Case Report eligibility, filters, terminology, and aggregate meanings while adding Administrator-only accessible charts/tables, audited PDF/CSV exports, and searchable redacted audit event detail.
+This repository contains the completed M0-M8 implementation. M8 adds release configuration checks, security/accessibility/cross-role verification, operational monitoring, queue workers, backup/restore and rollback evidence, and release/UAT/training runbooks without changing approved domain behavior.
 
-Process Server service records and M8+ features are not implemented.
+No M9 exists. Deferred features remain out of scope until separately approved.
 
 ## Authoritative Documentation
 
@@ -40,6 +40,9 @@ The read-only legacy reference is:
 - `docs/m5/IMPLEMENTATION_SUMMARY.md`
 - `docs/m6/IMPLEMENTATION_SUMMARY.md`
 - `docs/m7/IMPLEMENTATION_SUMMARY.md`
+- `docs/m8/IMPLEMENTATION_SUMMARY.md`
+- `docs/m8/OPERATIONS_RUNBOOK.md`
+- `docs/m8/RELEASE_CHECKLIST.md`
 - `docs/m0/LOCAL_SETUP.md`
 
 ## Domain Preservation
@@ -61,6 +64,10 @@ npm run typecheck
 npm run build
 composer analyse
 php artisan test
+composer audit
+npm audit --audit-level=high
 ```
+
+Release verification also includes PostgreSQL backup/restore rehearsal and the Playwright suite. See `docs/m8/OPERATIONS_RUNBOOK.md` and `docs/m8/UAT_PLAN.md`.
 
 See `docs/m0/LOCAL_SETUP.md` for PostgreSQL test database setup.

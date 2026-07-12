@@ -21,7 +21,14 @@ class GenerateSubpoenaPdf implements ShouldQueue
 
     public int $tries = 3;
 
-    public function __construct(public readonly string $documentId) {}
+    public int $timeout = 120;
+
+    public bool $failOnTimeout = true;
+
+    public function __construct(public readonly string $documentId)
+    {
+        $this->onQueue('documents');
+    }
 
     /** @return list<object> */
     public function middleware(): array
@@ -44,7 +51,7 @@ class GenerateSubpoenaPdf implements ShouldQueue
             throw new RuntimeException('Subpoena PDF generation produced an invalid document.');
         }
 
-        $disk = 'local';
+        $disk = (string) config('operations.document_disk');
         $path = "documents/subpoenas/{$document->case_id}/v{$document->version}.pdf";
         $temporaryPath = "documents/subpoenas/{$document->case_id}/.tmp/{$document->id}-".Str::uuid().'.pdf';
         if (! Storage::disk($disk)->put($temporaryPath, $bytes)) {

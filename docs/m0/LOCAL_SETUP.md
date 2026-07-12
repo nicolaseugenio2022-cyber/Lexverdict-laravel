@@ -48,4 +48,18 @@ npm run build
 php artisan test
 ```
 
-M0 contains only an Inertia baseline page and architecture smoke test. Domain features must wait for M1+ approval.
+## M8 Browser Verification
+
+Browser tests destroy and reseed only `lexverdict_test`. Never run these commands against staging or production.
+
+```powershell
+npx playwright install chromium
+php artisan migrate:fresh --env=testing --force
+php artisan db:seed --class=Database\Seeders\M8E2ESeeder --env=testing --force
+npm run build
+npm run test:e2e
+```
+
+Use `php artisan lexverdict:release-check` with the intended staging/production environment before deployment. Use `php artisan lexverdict:health-check` for dependency and queue monitoring.
+
+M0-M8 implementation is complete; no M9 is defined.

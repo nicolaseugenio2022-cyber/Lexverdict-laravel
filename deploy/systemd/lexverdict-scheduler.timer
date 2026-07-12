@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the LexVerdict scheduler every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+Persistent=true
+Unit=lexverdict-scheduler.service
+
+[Install]
+WantedBy=timers.target

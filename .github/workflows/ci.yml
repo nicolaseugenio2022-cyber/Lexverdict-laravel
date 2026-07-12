@@ -60,6 +60,12 @@ jobs:
       - name: Static analysis
         run: composer analyse -- --no-progress
 
+      - name: Dependency and tracked-secret audit
+        run: |
+          composer audit --no-interaction
+          npm audit --audit-level=high
+          php ops/check-no-secrets.php
+
       - name: Frontend lint
         run: npm run lint
 
@@ -69,11 +75,32 @@ jobs:
       - name: Frontend build
         run: npm run build
 
+      - name: Hardened release configuration check
+        env:
+          APP_ENV: production
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          APP_DEBUG: 'false'
+          APP_URL: https://lexverdict.example.gov.ph
+          APP_TIMEZONE: Asia/Manila
+          DB_CONNECTION: pgsql
+          DB_SSLMODE: require
+          CACHE_STORE: database
+          QUEUE_CONNECTION: database
+          SESSION_ENCRYPT: 'true'
+          SESSION_SECURE_COOKIE: 'true'
+          SESSION_HTTP_ONLY: 'true'
+          SESSION_SAME_SITE: lax
+          DOCUMENT_DISK: local
+        run: php artisan lexverdict:release-check
+
       - name: PostgreSQL migration verification
         run: |
           php artisan migrate:fresh --env=testing --force
           php artisan migrate:rollback --env=testing --step=4 --force
           php artisan migrate --env=testing --force
+
+      - name: Queue worker smoke test
+        run: php artisan queue:work database --queue=documents,default --once --stop-when-empty --timeout=120
 
       - name: Subpoena PDF visual baseline
         run: |
@@ -88,3 +115,16 @@ jobs:
 
       - name: Test
         run: php artisan test
+
+      - name: PostgreSQL backup and restore rehearsal
+        shell: pwsh
+        run: |
+          $backup = ./ops/backup-postgresql.ps1 -OutputDirectory storage/framework/testing/backups -EnvironmentFile .env.testing | Select-Object -Last 1
+          ./ops/verify-postgresql-restore.ps1 -BackupFile $backup -EnvironmentFile .env.testing -VerificationDatabase lexverdict_ci_restore_verify
+
+      - name: Browser and accessibility verification
+        run: |
+          php artisan migrate:fresh --env=testing --force
+          php artisan db:seed --class=Database\\Seeders\\M8E2ESeeder --env=testing --force
+          npx playwright install --with-deps chromium
+          npm run test:e2e

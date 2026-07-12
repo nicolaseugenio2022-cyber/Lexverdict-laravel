@@ -16,6 +16,13 @@ export default tseslint.config(
         },
     },
     {
+        files: ['tests/e2e/**/*.ts', 'playwright.config.ts'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            globals: globals.node,
+        },
+    },
+    {
         files: ['resources/js/**/*.{ts,tsx}'],
         plugins: {
             'react-hooks': reactHooks,

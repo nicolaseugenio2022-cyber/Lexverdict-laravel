@@ -16,6 +16,8 @@
 /node_modules
 /public/build
 /public/hot
+/playwright-report
+/test-results
 /public/storage
 /storage/*.key
 /storage/pail

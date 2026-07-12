@@ -45,7 +45,7 @@ export default function Index({ events, filters }: Props) {
                     </table>
                 </div>
                 <nav aria-label="Audit pagination" className="flex flex-wrap items-center gap-2">
-                    {events.links.map((link) => link.url ? <Link key={link.label} href={link.url} preserveScroll className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border px-3 text-sm ${link.active ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}`}>{pageLabel(link.label)}</Link> : <span key={link.label} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-slate-200 px-3 text-sm text-slate-400">{pageLabel(link.label)}</span>)}
+                    {events.links.map((link) => link.url ? <Link key={link.label} href={link.url} preserveScroll className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border px-3 text-sm ${link.active ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}`}>{pageLabel(link.label)}</Link> : <span key={link.label} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-slate-200 px-3 text-sm text-slate-600">{pageLabel(link.label)}</span>)}
                     <span className="ml-2 text-sm text-slate-600">Page {events.current_page} of {events.last_page}</span>
                 </nav>
             </div>
