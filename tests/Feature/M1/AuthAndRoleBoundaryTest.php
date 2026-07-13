@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\M1;
 
+use App\Domain\Cases\Enums\SubpoenaStatus;
 use App\Domain\Identity\Enums\StaffRole;
+use App\Models\LegalCase;
 use App\Models\ProsecutorSecretaryAssignment;
 use App\Models\StaffProfile;
 use App\Models\User;
@@ -24,15 +26,44 @@ class AuthAndRoleBoundaryTest extends TestCase
 
         $this->pair($prosecutor, $secretary, $admin);
 
-        foreach ([$admin, $prosecutor, $secretary, $processServer] as $user) {
+        $landings = [
+            [$admin, '/dashboard'],
+            [$prosecutor, '/cases'],
+            [$secretary, '/cases'],
+            [$processServer, '/process-server/cases'],
+        ];
+
+        foreach ($landings as [$user, $landing]) {
             $this->post('/login', [
                 'username' => $user->username,
                 'password' => 'password',
-            ])->assertRedirect('/dashboard');
+            ])->assertRedirect($landing);
 
             $this->assertAuthenticatedAs($user);
+            $this->get('/login')->assertRedirect($landing);
             $this->post('/logout')->assertRedirect('/login');
         }
+    }
+
+    public function test_prosecutor_lands_on_subpoena_review_when_assigned_pending_work_exists(): void
+    {
+        $admin = $this->staff(StaffRole::Superuser, 'pending_admin');
+        $prosecutor = $this->staff(StaffRole::Prosecutor, 'pending_prosecutor');
+        $secretary = $this->staff(StaffRole::Secretary, 'pending_secretary');
+        $this->pair($prosecutor, $secretary, $admin);
+
+        LegalCase::factory()->create([
+            'assigned_prosecutor_id' => $prosecutor->id,
+            'created_by_user_id' => $secretary->id,
+            'subpoena_status' => SubpoenaStatus::Pending->value,
+        ]);
+
+        $this->post('/login', [
+            'username' => $prosecutor->username,
+            'password' => 'password',
+        ])->assertRedirect('/subpoena-reviews');
+
+        $this->get('/login')->assertRedirect('/subpoena-reviews');
     }
 
     public function test_inactive_staff_cannot_authenticate(): void
@@ -47,7 +78,7 @@ class AuthAndRoleBoundaryTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_non_admin_roles_cannot_open_user_administration(): void
+    public function test_non_admin_roles_cannot_open_dashboard_or_user_administration(): void
     {
         $admin = $this->staff(StaffRole::Superuser, 'admin');
         $prosecutor = $this->staff(StaffRole::Prosecutor, 'prosecutor');
@@ -56,6 +87,10 @@ class AuthAndRoleBoundaryTest extends TestCase
         $this->pair($prosecutor, $secretary, $admin);
 
         foreach ([$prosecutor, $secretary, $processServer] as $user) {
+            $this->actingAs($user)
+                ->get('/dashboard')
+                ->assertForbidden();
+
             $this->actingAs($user)
                 ->get('/admin/users')
                 ->assertForbidden();
@@ -71,7 +106,9 @@ class AuthAndRoleBoundaryTest extends TestCase
         $this->actingAs($admin)
             ->get('/dashboard')
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component('Dashboard'));
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Dashboard')
+                ->where('auth.can.view_dashboard', true));
 
         $this->actingAs($admin)
             ->get('/admin/users')

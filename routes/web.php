@@ -25,7 +25,9 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware(['auth', 'active'])->group(function (): void {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
-    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)
+        ->middleware('can:view-dashboard')
+        ->name('dashboard');
     Route::get('process-server/cases', [CaseController::class, 'index'])
         ->middleware('can:view-process-server-cases')
         ->name('process-server.cases.index');

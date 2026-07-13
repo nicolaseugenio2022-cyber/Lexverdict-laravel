@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Identity\Actions\ResolveStaffLanding;
 use App\Http\Controllers\ReadinessController;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -7,6 +8,7 @@ use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -21,6 +23,14 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectUsersTo(function (Request $request): string {
+            $user = $request->user();
+
+            return $user === null
+                ? route('login', absolute: false)
+                : app(ResolveStaffLanding::class)->path($user);
+        });
+
         $trustedProxyValue = $_SERVER['TRUSTED_PROXIES'] ?? $_ENV['TRUSTED_PROXIES'] ?? getenv('TRUSTED_PROXIES');
         $trustedProxies = array_values(array_filter(array_map('trim', explode(',', (string) $trustedProxyValue))));
         if ($trustedProxies !== []) {

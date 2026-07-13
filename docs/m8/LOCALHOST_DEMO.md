@@ -78,12 +78,12 @@ Open `http://127.0.0.1:8000/login`. Public Case Lookup is available at `http://1
 
 All accounts use password `LocalDemo!2026`.
 
-| Role | Username |
-| --- | --- |
-| Administrator | `demo_admin` |
-| Prosecutor | `demo_prosecutor` |
-| Secretary | `demo_secretary` |
-| Process Server | `demo_process_server` |
+| Role | Username | Post-login landing |
+| --- | --- | --- |
+| Administrator | `demo_admin` | Dashboard |
+| Prosecutor | `demo_prosecutor` | Subpoena Review when assigned pending work exists; otherwise Cases |
+| Secretary | `demo_secretary` | Cases |
+| Process Server | `demo_process_server` | Read-only Cases |
 
 The demo Prosecutor and Secretary are assigned to each other according to the mandatory one-to-one rule.
 

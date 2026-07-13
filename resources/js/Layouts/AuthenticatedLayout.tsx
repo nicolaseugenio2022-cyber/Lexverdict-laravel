@@ -13,7 +13,7 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
     const user = auth.user;
 
     const navItems: NavItem[] = [
-        { label: 'Dashboard', href: '/dashboard', show: true },
+        { label: 'Dashboard', href: '/dashboard', show: auth.can.view_dashboard },
         {
             label: 'Cases',
             href: auth.can.process_server_scope ? '/process-server/cases' : '/cases',

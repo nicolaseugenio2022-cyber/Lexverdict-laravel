@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domain\Identity\Actions\ResolveStaffLanding;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
@@ -22,7 +23,7 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('Auth/Login');
     }
 
-    public function store(LoginRequest $request, AuditRecorder $audit): RedirectResponse
+    public function store(LoginRequest $request, AuditRecorder $audit, ResolveStaffLanding $landing): RedirectResponse
     {
         $key = Str::lower($request->string('username')->toString()).'|'.$request->ip();
 
@@ -58,7 +59,7 @@ class AuthenticatedSessionController extends Controller
 
         $audit->record('auth.login', $user, User::class, $user->id, null, $request);
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->route($landing->routeName($user));
     }
 
     public function destroy(Request $request, AuditRecorder $audit): RedirectResponse

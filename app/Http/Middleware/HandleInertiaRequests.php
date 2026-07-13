@@ -52,6 +52,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->staffProfile?->displayName(),
                 ] : null,
                 'can' => [
+                    'view_dashboard' => $user?->can('view-dashboard') ?? false,
                     'manage_users' => $user?->can('manage-users') ?? false,
                     'manage_assignments' => $user?->can('manage-assignments') ?? false,
                     'process_server_scope' => $user?->can('process-server-scope') ?? false,

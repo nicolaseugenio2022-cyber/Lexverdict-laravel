@@ -67,6 +67,18 @@ class M8E2ESeeder extends Seeder
                 'court' => 'RTC Cabanatuan',
             ], $secretary);
             app(DecideResolution::class)->approve($resolution, $admin, 1);
+
+            app(CreateCase::class)->create([
+                'date' => '2026-07-11',
+                'hearing_date_1' => '2026-07-23 09:30:00',
+                'hearing_date_2' => '2026-07-24 09:30:00',
+                'police_station' => 'Cabanatuan City Police Station',
+                'offense_ids' => [$offense->id],
+                'parties' => [
+                    $this->party('Complainant', 'Pending', 'Complainant', 'Female'),
+                    $this->party('Respondent', 'Pending', 'Respondent', 'Male'),
+                ],
+            ], $secretary);
         });
     }
 

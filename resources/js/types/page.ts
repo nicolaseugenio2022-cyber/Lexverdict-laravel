@@ -11,6 +11,7 @@ export type PageProps = {
     auth: {
         user: AuthUser | null;
         can: {
+            view_dashboard: boolean;
             manage_users: boolean;
             manage_assignments: boolean;
             process_server_scope: boolean;

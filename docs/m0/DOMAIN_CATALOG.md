@@ -58,6 +58,7 @@ This catalog is a source-referenced baseline for LexVerdict. It does not authori
 | Subpoena legal format and assets | Project-owner M6 decision approving legacy subpoena format and `C:\Projects\LexVerdict\static` assets | Legacy template and official images are canonical; no redesign, modernization, restyling, renaming, or legal-content alteration | Approved |
 | Case and Subpoena model | Project-owner Acceptance Remediation Slice 1 decision | Case is the primary domain record; Subpoena is its versioned reviewable document and approval workflow, not a separate Case entity; all three workflow fields remain separate | Approved |
 | Process Server case-list scope | Legacy `app/routes/ps_routes.py:14-79`, `templates/process_server/subpoena_list.html:70-123`, and project-owner Acceptance Remediation Slice 1 decision | Read-only searchable/sortable/paginated legacy case-list projection across Cases; PIN omitted by approved security decision; no mutation or administrative authority | Approved |
+| Role landing pages and Dashboard | Project-owner Acceptance Remediation Slice 1.5 decision | Administrator alone retains Dashboard and lands there; Secretary and Process Server land on Cases; Prosecutor lands on assigned pending Subpoena Review when work exists, otherwise Cases | Approved |
 
 ## Blocked Clarifications
 
