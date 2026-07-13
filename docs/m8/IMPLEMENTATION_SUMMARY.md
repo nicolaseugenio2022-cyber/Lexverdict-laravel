@@ -2,6 +2,14 @@
 
 M8 hardens the completed M0-M7 system for release without adding domain functionality.
 
+## Project Phase Status
+
+✅ M8 PASSED — Technical Implementation Complete
+
+⏳ Production Release Pending — Owner/Environment Approval
+
+The owner intentionally deferred the unchecked Owner/Environment Gates for this localhost-only phase. `RELEASE_CHECKLIST.md` remains unchanged, and every unchecked gate remains mandatory before future staging or production deployment.
+
 ## Implemented
 
 - Synthetic-volume report profiling with query-count, elapsed-time, and PostgreSQL index-plan assertions.
@@ -12,6 +20,7 @@ M8 hardens the completed M0-M7 system for release without adding domain function
 - PostgreSQL custom-format backup, SHA-256 sidecar, isolated restore, critical-table reconciliation, and cleanup scripts with local restore evidence.
 - Migration rollback/reapply verification and deployment rollback runbook.
 - Legacy import decision record, operations runbook, UAT plan, role-based training guide, and release checklist.
+- Local-only demo accounts and representative Case, Subpoena, Resolution, report, audit, and public lookup fixtures with documented localhost commands.
 
 ## Scope Decision
 

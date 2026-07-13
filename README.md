@@ -8,6 +8,8 @@ M8 - Hardening, migration, and release readiness.
 
 This repository contains the completed M0-M8 implementation. M8 adds release configuration checks, security/accessibility/cross-role verification, operational monitoring, queue workers, backup/restore and rollback evidence, and release/UAT/training runbooks without changing approved domain behavior.
 
+M8 technical implementation is complete. Production release remains pending and requires every Owner/Environment Gate in `docs/m8/RELEASE_CHECKLIST.md`.
+
 No M9 exists. Deferred features remain out of scope until separately approved.
 
 ## Authoritative Documentation
@@ -71,3 +73,5 @@ npm audit --audit-level=high
 Release verification also includes PostgreSQL backup/restore rehearsal and the Playwright suite. See `docs/m8/OPERATIONS_RUNBOOK.md` and `docs/m8/UAT_PLAN.md`.
 
 See `docs/m0/LOCAL_SETUP.md` for PostgreSQL test database setup.
+
+For local demonstration accounts, representative workflow data, and public lookup credentials, see `docs/m8/LOCALHOST_DEMO.md`.

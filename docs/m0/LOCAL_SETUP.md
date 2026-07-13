@@ -63,3 +63,7 @@ npm run test:e2e
 Use `php artisan lexverdict:release-check` with the intended staging/production environment before deployment. Use `php artisan lexverdict:health-check` for dependency and queue monitoring.
 
 M0-M8 implementation is complete; no M9 is defined.
+
+## Localhost Demonstration
+
+Use `docs/m8/LOCALHOST_DEMO.md` to create all four demo role accounts, representative workflow data, reports/audit data, and the documented public lookup sample. The demo fixture is restricted to `APP_ENV=local` and an empty domain database.
