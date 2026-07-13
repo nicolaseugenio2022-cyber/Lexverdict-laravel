@@ -50,6 +50,15 @@ class LocalDemoSeederTest extends TestCase
         $this->assertSame(1, Resolution::query()->where('status', 'Denied')->count());
         $this->assertGreaterThanOrEqual(20, AuditEvent::query()->count());
 
+        $processServer = User::query()->where('username', 'demo_process_server')->firstOrFail();
+        $this->actingAs($processServer)
+            ->get('/process-server/cases')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('is_process_server', true)
+                ->where('cases.total', 6)
+                ->has('cases.data', 6));
+
         $this->post('/docket', [
             'docket' => 'III-09-INV-26G-0001',
             'pin' => '246810',

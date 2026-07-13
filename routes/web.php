@@ -26,6 +26,9 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware(['auth', 'active'])->group(function (): void {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('process-server/cases', [CaseController::class, 'index'])
+        ->middleware('can:view-process-server-cases')
+        ->name('process-server.cases.index');
     Route::resource('cases', CaseController::class)->except(['destroy']);
     Route::post('cases/{case}/documents/subpoena', [SubpoenaDocumentController::class, 'store'])->name('documents.subpoena.store');
     Route::get('cases/{case}/documents/{document}', [SubpoenaDocumentController::class, 'show'])->name('documents.show');

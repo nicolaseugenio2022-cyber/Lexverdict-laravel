@@ -37,6 +37,7 @@ class CaseController extends Controller
 {
     public function index(Request $request, CaseListQuery $cases, CaseAccess $access): Response
     {
+        $isProcessServer = $request->user()->hasRole(StaffRole::ProcessServer);
         $paginatedCases = $cases->paginate($request->user(), $request)
             ->through(fn (LegalCase $case): array => $this->caseRow($case));
 
@@ -45,11 +46,13 @@ class CaseController extends Controller
             'filters' => [
                 'search' => (string) $request->query('search', ''),
                 'status' => (string) $request->query('status', ''),
-                'sort' => (string) $request->query('sort', 'date'),
+                'sort' => (string) $request->query('sort', $isProcessServer ? 'docket_number' : 'date'),
                 'direction' => (string) $request->query('direction', 'desc'),
             ],
-            'statuses' => array_map(fn (SubpoenaStatus $status): string => $status->value, SubpoenaStatus::cases()),
+            'statuses' => $isProcessServer ? [] : array_map(fn (SubpoenaStatus $status): string => $status->value, SubpoenaStatus::cases()),
             'can_create_case' => $access->canCreate($request->user()),
+            'is_process_server' => $isProcessServer,
+            'list_url' => $isProcessServer ? route('process-server.cases.index', absolute: false) : route('cases.index', absolute: false),
         ]);
     }
 
@@ -177,6 +180,13 @@ class CaseController extends Controller
      */
     private function caseRow(LegalCase $case): array
     {
+        $resolution = $case->resolution;
+        $resolutionStatus = $resolution === null ? null : $this->resolutionStatusValue($resolution->status);
+        $resolutionVerdict = $resolution === null ? null : $this->resolutionVerdictValue($resolution->verdict);
+        $approvedOutcome = $resolutionStatus === ResolutionStatus::Approved->value
+            && in_array($resolutionVerdict, [ResolutionVerdict::ForFiling->value, ResolutionVerdict::Dismissed->value], true);
+        $forFiling = $approvedOutcome && $resolutionVerdict === ResolutionVerdict::ForFiling->value;
+
         return [
             'id' => $case->id,
             'docket_number' => $case->docket_number,
@@ -188,6 +198,9 @@ class CaseController extends Controller
             'offenses' => $case->offenses->pluck('name')->values()->all(),
             'complainants' => $this->partyLastNames($case, PartyRole::Complainant),
             'respondents' => $this->partyLastNames($case, PartyRole::Respondent),
+            'resolution_verdict' => $approvedOutcome ? $resolutionVerdict : ResolutionVerdict::Pending->value,
+            'court' => $forFiling ? $resolution->court : null,
+            'verdict_date' => $approvedOutcome ? $this->dateString($resolution->verdict_date) : null,
         ];
     }
 

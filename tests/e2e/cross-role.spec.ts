@@ -41,11 +41,16 @@ test('each staff role receives only its approved navigation and route access', a
     await logout(page);
 
     await login(page, 'e2e_process_server');
-    await expect(page.getByRole('link', { name: 'Cases' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Cases' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Reports' })).toHaveCount(0);
-    response = await page.goto('/cases');
-    expect(response?.status()).toBe(200);
-    await expect(page.getByText('No cases found.')).toBeVisible();
+    await page.getByRole('link', { name: 'Cases' }).click();
+    await expect(page).toHaveURL(/\/process-server\/cases$/);
+    await expect(page.getByRole('columnheader', { name: /Docket Number/ })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: /Resolution Verdict/ })).toBeVisible();
+    await expect(page.getByText('Qualified Theft', { exact: true })).toBeVisible();
+    await expect(page.getByText('For Filing', { exact: true })).toBeVisible();
+    await expect(page.getByText('RTC Cabanatuan', { exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'View' })).toHaveCount(0);
 });
 
 test('public lookup and administrator report preserve approved behavior', async ({ page }) => {
@@ -59,14 +64,18 @@ test('public lookup and administrator report preserve approved behavior', async 
     await login(page, 'e2e_admin');
     await page.getByRole('link', { name: 'Reports' }).click();
     await page.getByRole('button', { name: 'Generate' }).click();
-    await expect(page.getByText('Select report filters and generate the Case Report.')).toBeVisible();
+    await expect(
+        page.getByText('Select report filters and generate the Case Report.'),
+    ).toBeVisible();
     await page.getByLabel('Case Status').selectOption('For Filing');
     await page.getByRole('button', { name: 'Generate' }).click();
     await expect(page.getByText('Total Cases')).toBeVisible();
     await expect(page.getByText('Qualified Theft', { exact: true }).first()).toBeVisible();
 });
 
-test('critical public and authenticated pages have no automatic accessibility violations', async ({ page }) => {
+test('critical public and authenticated pages have no automatic accessibility violations', async ({
+    page,
+}) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/login');
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);

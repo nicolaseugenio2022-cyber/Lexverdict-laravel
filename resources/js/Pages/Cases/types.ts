@@ -39,6 +39,8 @@ export type CaseRecord = {
     offenses: string[];
     complainants: string[];
     respondents: string[];
+    resolution_verdict: 'For Filing' | 'Dismissed' | 'Pending';
+    court: string | null;
+    verdict_date: string | null;
     parties?: CasePartyForm[];
 };
-

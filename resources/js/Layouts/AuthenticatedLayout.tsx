@@ -14,9 +14,17 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
 
     const navItems: NavItem[] = [
         { label: 'Dashboard', href: '/dashboard', show: true },
-        { label: 'Cases', href: '/cases', show: auth.can.case_management },
+        {
+            label: 'Cases',
+            href: auth.can.process_server_scope ? '/process-server/cases' : '/cases',
+            show: auth.can.case_management || auth.can.process_server_scope,
+        },
         { label: 'Subpoena Review', href: '/subpoena-reviews', show: auth.can.review_subpoenas },
-        { label: 'Resolution Review', href: '/resolution-reviews', show: auth.can.review_resolutions },
+        {
+            label: 'Resolution Review',
+            href: '/resolution-reviews',
+            show: auth.can.review_resolutions,
+        },
         { label: 'Users', href: '/admin/users', show: auth.can.manage_users },
         { label: 'Assignments', href: '/admin/assignments', show: auth.can.manage_assignments },
         { label: 'Reports', href: '/admin/reports', show: auth.can.view_reports },
@@ -47,7 +55,10 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
             </header>
 
             <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 md:grid-cols-[220px_1fr]">
-                <nav aria-label="Staff navigation" className="rounded-md border border-slate-200 bg-white p-2">
+                <nav
+                    aria-label="Staff navigation"
+                    className="rounded-md border border-slate-200 bg-white p-2"
+                >
                     {navItems
                         .filter((item) => item.show)
                         .map((item) => (

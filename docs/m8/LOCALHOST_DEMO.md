@@ -95,7 +95,7 @@ The fixture creates six Cases with representative workflow states:
 - `Approved`, `Pending`, and `Denied` Resolutions, including a denial comment.
 - Approved `For Filing` and `Dismissed` outcomes for Case Report data.
 - Domain-generated audit history for assignment, offense, Case, Subpoena, and Resolution actions.
-- Approved records visible to the Process Server according to existing role restrictions.
+- All six representative Cases are visible to the Process Server through the read-only `Cases` navigation, including Resolution Verdict, Court, and Verdict Date where applicable. PIN values and all mutation controls remain concealed.
 
 ## Public Case Lookup
 

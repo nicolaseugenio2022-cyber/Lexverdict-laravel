@@ -56,11 +56,12 @@ This catalog is a source-referenced baseline for LexVerdict. It does not authori
 | Resolution validation and transitions | Legacy forms/templates and `admin_routes.py:943-1103`, `secret_routes.py:853-952` | `Pending` verdict cannot be submitted; `For Filing` requires Court; `Dismissed` clears Court; pending/denied revision returns status to `Pending`; review transitions are `Pending` to `Approved` or `Denied` | Confirmed |
 | Public lookup projection | Project-owner M6 decision approving legacy Case Lookup | Preserve exactly `Docket Number`, `Case Type`, `Prosecutor`, `1st Hearing`, `2nd Hearing`, `Status`, `Date Filed`, and conditional `Court Location`; reconstruct unavailable view logic from validated behavior without adding/removing/renaming fields | Approved |
 | Subpoena legal format and assets | Project-owner M6 decision approving legacy subpoena format and `C:\Projects\LexVerdict\static` assets | Legacy template and official images are canonical; no redesign, modernization, restyling, renaming, or legal-content alteration | Approved |
+| Case and Subpoena model | Project-owner Acceptance Remediation Slice 1 decision | Case is the primary domain record; Subpoena is its versioned reviewable document and approval workflow, not a separate Case entity; all three workflow fields remain separate | Approved |
+| Process Server case-list scope | Legacy `app/routes/ps_routes.py:14-79`, `templates/process_server/subpoena_list.html:70-123`, and project-owner Acceptance Remediation Slice 1 decision | Read-only searchable/sortable/paginated legacy case-list projection across Cases; PIN omitted by approved security decision; no mutation or administrative authority | Approved |
 
 ## Blocked Clarifications
 
 | Topic | Conflict or gap | Why blocked |
 |---|---|---|
-| Case versus Subpoena aggregate | Approved docs say target representation is blocked pending approval | M2 schema cannot decide whether `case` and `subpoena` are one operational record or distinct concepts |
-| Process Server service scope | Approved docs say service-attempt recording is To confirm | Process Server mutation/service-result features cannot be implemented |
+| Process Server service mutation | Service-attempt recording remains To confirm | Slice 1 authorizes read-only list access only; service-attempt or service-result mutations cannot be implemented |
 | Retention and purge policy | Listed unresolved in multiple docs | No purge/destructive data features can be implemented |
