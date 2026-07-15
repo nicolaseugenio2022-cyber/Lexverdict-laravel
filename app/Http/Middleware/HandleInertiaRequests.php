@@ -56,6 +56,7 @@ class HandleInertiaRequests extends Middleware
                     'manage_users' => $user?->can('manage-users') ?? false,
                     'manage_assignments' => $user?->can('manage-assignments') ?? false,
                     'manage_offenses' => $user?->can('manage-offenses') ?? false,
+                    'view_secretary_verification' => $user?->can('view-secretary-verification') ?? false,
                     'process_server_scope' => $user?->can('process-server-scope') ?? false,
                     'case_management' => $user !== null && ! $user->can('process-server-scope'),
                     'review_subpoenas' => $user?->hasRole(StaffRole::Prosecutor) ?? false,

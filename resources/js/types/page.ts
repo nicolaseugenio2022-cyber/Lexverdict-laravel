@@ -15,6 +15,7 @@ export type PageProps = {
             manage_users: boolean;
             manage_assignments: boolean;
             manage_offenses: boolean;
+            view_secretary_verification: boolean;
             process_server_scope: boolean;
             case_management: boolean;
             review_subpoenas: boolean;

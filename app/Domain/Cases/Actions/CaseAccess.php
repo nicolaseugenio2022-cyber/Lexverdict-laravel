@@ -83,6 +83,10 @@ class CaseAccess
 
     public function assignedProsecutorIdForSecretary(User $secretary): ?string
     {
+        if ($secretary->relationLoaded('secretaryAssignment')) {
+            return $secretary->secretaryAssignment?->prosecutor_user_id;
+        }
+
         return ProsecutorSecretaryAssignment::query()
             ->where('secretary_user_id', $secretary->id)
             ->value('prosecutor_user_id');

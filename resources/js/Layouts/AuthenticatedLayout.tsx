@@ -20,6 +20,11 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
             href: auth.can.process_server_scope ? '/process-server/cases' : '/cases',
             show: auth.can.case_management || auth.can.process_server_scope,
         },
+        {
+            label: 'Verifying Cases',
+            href: '/secretary/verifying-cases',
+            show: auth.can.view_secretary_verification,
+        },
         { label: 'Subpoena Review', href: '/subpoena-reviews', show: auth.can.review_subpoenas },
         {
             label: 'Resolution Review',

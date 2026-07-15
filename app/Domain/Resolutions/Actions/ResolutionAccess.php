@@ -7,7 +7,6 @@ use App\Domain\Cases\Enums\SubpoenaStatus;
 use App\Domain\Identity\Enums\StaffRole;
 use App\Domain\Resolutions\Enums\ResolutionStatus;
 use App\Models\LegalCase;
-use App\Models\ProsecutorSecretaryAssignment;
 use App\Models\Resolution;
 use App\Models\User;
 
@@ -29,10 +28,7 @@ class ResolutionAccess
             return false;
         }
 
-        return ProsecutorSecretaryAssignment::query()
-            ->where('secretary_user_id', $user->id)
-            ->where('prosecutor_user_id', $case->assigned_prosecutor_id)
-            ->exists();
+        return $this->cases->assignedProsecutorIdForSecretary($user) === $case->assigned_prosecutor_id;
     }
 
     public function canView(User $user, Resolution $resolution): bool
@@ -45,9 +41,12 @@ class ResolutionAccess
     public function canRevise(User $user, Resolution $resolution): bool
     {
         $status = $this->resolutionStatus($resolution->status);
+        $case = $resolution->relationLoaded('case') && $resolution->case
+            ? $resolution->case
+            : $resolution->case()->firstOrFail();
 
         return in_array($status, [ResolutionStatus::Pending->value, ResolutionStatus::Denied->value], true)
-            && $this->canSubmit($user, $resolution->case()->firstOrFail());
+            && $this->canSubmit($user, $case);
     }
 
     public function canAccessReviewQueue(User $user): bool

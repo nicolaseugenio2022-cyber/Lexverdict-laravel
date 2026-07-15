@@ -33,5 +33,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('process-server-scope', fn (User $user): bool => $user->hasRole(StaffRole::ProcessServer));
         Gate::define('view-process-server-cases', fn (User $user): bool => $user->is_active && $user->hasRole(StaffRole::ProcessServer));
         Gate::define('manage-offenses', fn (User $user): bool => $user->hasRole(StaffRole::Superuser));
+        Gate::define('view-secretary-verification', fn (User $user): bool => $user->is_active && $user->hasRole(StaffRole::Secretary));
     }
 }

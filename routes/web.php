@@ -11,6 +11,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PublicLookupController;
 use App\Http\Controllers\ResolutionController;
 use App\Http\Controllers\ResolutionReviewController;
+use App\Http\Controllers\SecretaryVerificationController;
 use App\Http\Controllers\SubpoenaDocumentController;
 use App\Http\Controllers\SubpoenaReviewController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +40,9 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('subpoena-reviews/{case}', [SubpoenaReviewController::class, 'show'])->name('subpoena-reviews.show');
     Route::post('subpoena-reviews/{case}/approve', [SubpoenaReviewController::class, 'approve'])->name('subpoena-reviews.approve');
     Route::post('subpoena-reviews/{case}/deny', [SubpoenaReviewController::class, 'deny'])->name('subpoena-reviews.deny');
+    Route::get('secretary/verifying-cases', SecretaryVerificationController::class)
+        ->middleware('can:view-secretary-verification')
+        ->name('secretary.verification.index');
 
     Route::get('cases/{case}/resolution/create', [ResolutionController::class, 'create'])->name('resolutions.create');
     Route::post('cases/{case}/resolution', [ResolutionController::class, 'store'])->name('resolutions.store');

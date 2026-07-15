@@ -97,6 +97,17 @@ The fixture creates six Cases with representative workflow states:
 - Domain-generated audit history for assignment, offense, Case, Subpoena, and Resolution actions.
 - All six representative Cases are visible to the Process Server through the read-only `Cases` navigation, including Resolution Verdict, Court, and Verdict Date where applicable. PIN values and all mutation controls remain concealed.
 
+The Secretary can inspect these records through `Verifying Cases`:
+
+| Docket Number | Secretary verification scenario |
+| --- | --- |
+| `III-09-INV-26G-0001` | Approved Subpoena, approved `For Filing` Resolution, and PDF-ready Subpoena |
+| `III-09-INV-26G-0002` | Approved Subpoena and approved `Dismissed` Resolution |
+| `III-09-INV-26G-0003` | `Pending` Subpoena waiting for Prosecutor review |
+| `III-09-INV-26G-0004` | `Denied` Subpoena requiring Secretary revision |
+| `III-09-INV-26G-0005` | Approved Subpoena with `Pending` Resolution waiting for Administrator review |
+| `III-09-INV-26G-0006` | Approved Subpoena with `Denied` Resolution requiring Secretary revision |
+
 ## Public Case Lookup
 
 - Docket Number: `III-09-INV-26G-0001`
