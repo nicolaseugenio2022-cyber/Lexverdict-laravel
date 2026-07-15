@@ -2,6 +2,7 @@ export type OffenseOption = {
     id: string;
     name: string;
     law_reference: string | null;
+    is_selectable: boolean;
 };
 
 export type ProsecutorOption = {
@@ -9,7 +10,13 @@ export type ProsecutorOption = {
     label: string;
 };
 
+export type AddressOption = {
+    code: string;
+    name: string;
+};
+
 export type CasePartyForm = {
+    source_party_id?: string | null;
     role: 'Complainant' | 'Respondent';
     first_name: string;
     middle_name: string;
@@ -22,6 +29,10 @@ export type CasePartyForm = {
     municipality: string;
     province: string;
     region: string;
+    region_code: string;
+    province_code: string;
+    municipality_code: string;
+    barangay_code: string;
 };
 
 export type CaseRecord = {

@@ -4,11 +4,14 @@ namespace App\Http\Requests\Cases;
 
 use App\Domain\Cases\Actions\CaseAccess;
 use App\Domain\Cases\Enums\PartyRole;
+use App\Http\Requests\Cases\Concerns\CanonicalizesCaseEntry;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreCaseRequest extends FormRequest
 {
+    use CanonicalizesCaseEntry;
+
     public function authorize(): bool
     {
         return app(CaseAccess::class)->canCreate($this->user());
@@ -26,7 +29,7 @@ class StoreCaseRequest extends FormRequest
             'hearing_date_2' => ['nullable', 'date', 'after:hearing_date_1'],
             'police_station' => ['required', 'string', 'max:255'],
             'offense_ids' => ['required', 'array', 'min:1'],
-            'offense_ids.*' => ['required', 'uuid', 'exists:offenses,id'],
+            'offense_ids.*' => ['bail', 'required', 'uuid', 'distinct:ignore_case', Rule::exists('offenses', 'id')->where('is_active', true)],
             'parties' => ['required', 'array', 'min:2'],
             'parties.*.role' => ['required', Rule::in([PartyRole::Complainant->value, PartyRole::Respondent->value])],
             'parties.*.first_name' => ['required', 'string', 'max:255'],
@@ -38,8 +41,9 @@ class StoreCaseRequest extends FormRequest
             'parties.*.street' => ['required', 'string', 'max:255'],
             'parties.*.barangay' => ['required', 'string', 'max:255'],
             'parties.*.municipality' => ['required', 'string', 'max:255'],
-            'parties.*.province' => ['required', 'string', 'max:255'],
+            'parties.*.province' => ['nullable', 'string', 'max:255'],
             'parties.*.region' => ['required', 'string', 'max:255'],
+            ...$this->canonicalAddressRules(),
         ];
     }
 }

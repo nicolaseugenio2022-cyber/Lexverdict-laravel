@@ -135,6 +135,44 @@ test('each staff role receives only its approved navigation and route access', a
     expect(response?.status()).toBe(403);
 });
 
+test('case entry supports keyboard crime search and cascading official addresses', async ({
+    page,
+}) => {
+    await login(page, 'e2e_secretary', '/cases');
+    await page.goto('/cases/create');
+
+    const crimeSearch = page.getByLabel('Search Crime');
+    await crimeSearch.fill('Qualified');
+    await crimeSearch.press('ArrowDown');
+    await crimeSearch.press('Enter');
+    await expect(page.getByText('Selected Crimes (1)')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Remove Qualified Theft' })).toBeVisible();
+
+    await crimeSearch.fill('Qualified');
+    await expect(page.getByText('No matching Crime is available.')).toBeVisible();
+    await crimeSearch.press('Escape');
+
+    const region = page.getByLabel('Region').first();
+    const province = page.getByLabel('Province').first();
+    const municipality = page.getByLabel('Municipality/City').first();
+    const barangay = page.getByLabel('Barangay').first();
+
+    await region.selectOption('0300000000');
+    await expect(province.getByRole('option', { name: 'Nueva Ecija' })).toBeAttached();
+    await province.selectOption('0304900000');
+    await expect(municipality.getByRole('option', { name: 'City of Cabanatuan' })).toBeAttached();
+    await municipality.selectOption('0304903000');
+    await expect(barangay.getByRole('option', { name: 'Dicarma' })).toBeAttached();
+    await barangay.selectOption('0304903031');
+
+    await region.selectOption('0700000000');
+    await expect(province).toHaveValue('');
+    await expect(municipality).toHaveValue('');
+    await expect(barangay).toHaveValue('');
+
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
 test('public lookup and administrator report preserve approved behavior', async ({ page }) => {
     await page.goto('/docket');
     await page.getByLabel('Docket Number').fill('III-09-INV-26G-0001');

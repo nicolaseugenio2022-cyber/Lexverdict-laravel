@@ -209,7 +209,7 @@ class CreateCase
                 throw new CaseDataInvariantException('Invalid party role.');
             }
 
-            foreach (['first_name', 'last_name', 'sex', 'street', 'barangay', 'municipality', 'province', 'region'] as $field) {
+            foreach (['first_name', 'last_name', 'sex', 'street', 'barangay', 'municipality', 'region'] as $field) {
                 if (trim((string) ($party[$field] ?? '')) === '') {
                     throw new CaseDataInvariantException('Required party fields are missing.');
                 }

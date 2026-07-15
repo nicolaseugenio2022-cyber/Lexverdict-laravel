@@ -165,10 +165,14 @@ class CaseUiAndScopedAccessTest extends TestCase
             'date_of_birth' => '1990-01-01',
             'sex' => 'Male',
             'street' => 'Street',
-            'barangay' => 'Barangay',
-            'municipality' => 'Municipality',
-            'province' => 'Province',
-            'region' => 'Region',
+            'barangay' => 'Dicarma',
+            'municipality' => 'City of Cabanatuan',
+            'province' => 'Nueva Ecija',
+            'region' => 'Region III (Central Luzon)',
+            'region_code' => '0300000000',
+            'province_code' => '0304900000',
+            'municipality_code' => '0304903000',
+            'barangay_code' => '0304903031',
         ];
     }
 }

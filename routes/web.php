@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CaseController;
+use App\Http\Controllers\CaseEntryAddressController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PublicLookupController;
 use App\Http\Controllers\ResolutionController;
@@ -33,6 +34,8 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('process-server/cases', [CaseController::class, 'index'])
         ->middleware('can:view-process-server-cases')
         ->name('process-server.cases.index');
+    Route::get('case-entry/address-options', CaseEntryAddressController::class)
+        ->name('case-entry.address-options');
     Route::resource('cases', CaseController::class)->except(['destroy']);
     Route::post('cases/{case}/documents/subpoena', [SubpoenaDocumentController::class, 'store'])->name('documents.subpoena.store');
     Route::get('cases/{case}/documents/{document}', [SubpoenaDocumentController::class, 'show'])->name('documents.show');

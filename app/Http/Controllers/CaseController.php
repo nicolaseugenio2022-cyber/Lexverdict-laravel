@@ -27,6 +27,7 @@ use App\Models\ResolutionRevision;
 use App\Models\SubpoenaDecision;
 use App\Models\SubpoenaRevision;
 use App\Models\User;
+use App\Support\PhilippineAddressCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -35,6 +36,8 @@ use Inertia\Response;
 
 class CaseController extends Controller
 {
+    public function __construct(private readonly PhilippineAddressCatalog $addresses) {}
+
     public function index(Request $request, CaseListQuery $cases, CaseAccess $access): Response
     {
         $isProcessServer = $request->user()->hasRole(StaffRole::ProcessServer);
@@ -67,6 +70,7 @@ class CaseController extends Controller
             'prosecutors' => $this->prosecutorOptions(),
             'partyRoles' => [PartyRole::Complainant->value, PartyRole::Respondent->value],
             'can_select_prosecutor' => $request->user()->hasRole(StaffRole::Superuser),
+            'regions' => $this->addresses->regions(),
         ]);
     }
 
@@ -123,10 +127,11 @@ class CaseController extends Controller
         return Inertia::render('Cases/Form', [
             'mode' => 'edit',
             'caseRecord' => $this->caseDetail($case),
-            'offenses' => $this->offenseOptions(),
+            'offenses' => $this->offenseOptions($case),
             'prosecutors' => $this->prosecutorOptions(),
             'partyRoles' => [PartyRole::Complainant->value, PartyRole::Respondent->value],
             'can_select_prosecutor' => false,
+            'regions' => $this->addresses->regions(),
             'denial_comments' => $this->decisionHistory($case, true),
         ]);
     }
@@ -134,7 +139,14 @@ class CaseController extends Controller
     public function update(UpdateCaseRequest $request, LegalCase $case, ReviseCase $cases): RedirectResponse
     {
         try {
-            $cases->revise($case, $request->validated(), $request->user());
+            $data = $request->validated();
+            $data['parties'] = array_map(function (array $party): array {
+                unset($party['source_party_id']);
+
+                return $party;
+            }, $data['parties']);
+
+            $cases->revise($case, $data, $request->user());
         } catch (CaseDataInvariantException $exception) {
             return back()->withErrors(['case' => $exception->getMessage()])->withInput();
         }
@@ -143,18 +155,24 @@ class CaseController extends Controller
     }
 
     /**
-     * @return list<array{id: string, name: string, law_reference: string|null}>
+     * @return list<array{id: string, name: string, law_reference: string|null, is_selectable: bool}>
      */
-    private function offenseOptions(): array
+    private function offenseOptions(?LegalCase $case = null): array
     {
-        return Offense::query()
-            ->where('is_active', true)
+        $query = Offense::query()->where('is_active', true);
+
+        if ($case !== null) {
+            $query->orWhereIn('id', $case->offenses->modelKeys());
+        }
+
+        return $query
             ->orderBy('name')
-            ->get(['id', 'name', 'law_reference'])
+            ->get(['id', 'name', 'law_reference', 'is_active'])
             ->map(fn (Offense $offense): array => [
                 'id' => $offense->id,
                 'name' => $offense->name,
                 'law_reference' => $offense->law_reference,
+                'is_selectable' => $offense->is_active,
             ])->all();
     }
 
@@ -377,20 +395,36 @@ class CaseController extends Controller
     {
         return $case->parties
             ->sortBy('position')
-            ->map(fn (CaseParty $party): array => [
-                'role' => $this->partyRoleValue($party->role),
-                'first_name' => $party->first_name,
-                'middle_name' => $party->middle_name,
-                'last_name' => $party->last_name,
-                'suffix' => $party->suffix,
-                'date_of_birth' => $this->dateString($party->date_of_birth),
-                'sex' => $party->sex,
-                'street' => $party->street,
-                'barangay' => $party->barangay,
-                'municipality' => $party->municipality,
-                'province' => $party->province,
-                'region' => $party->region,
-            ])
+            ->map(function (CaseParty $party): array {
+                $selection = $this->addresses->selectionForNames(
+                    $party->region,
+                    $party->province,
+                    $party->municipality,
+                    $party->barangay,
+                ) ?? [
+                    'region_code' => '',
+                    'province_code' => '',
+                    'municipality_code' => '',
+                    'barangay_code' => '',
+                ];
+
+                return [
+                    'source_party_id' => $party->id,
+                    'role' => $this->partyRoleValue($party->role),
+                    'first_name' => $party->first_name,
+                    'middle_name' => $party->middle_name,
+                    'last_name' => $party->last_name,
+                    'suffix' => $party->suffix,
+                    'date_of_birth' => $this->dateString($party->date_of_birth),
+                    'sex' => $party->sex,
+                    'street' => $party->street,
+                    'barangay' => $party->barangay,
+                    'municipality' => $party->municipality,
+                    'province' => $party->province,
+                    'region' => $party->region,
+                    ...$selection,
+                ];
+            })
             ->values()
             ->all();
     }

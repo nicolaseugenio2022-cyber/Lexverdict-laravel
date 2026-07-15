@@ -6,6 +6,7 @@ use App\Domain\Identity\Enums\StaffRole;
 use App\Models\Offense;
 use App\Models\User;
 use App\Policies\OffensePolicy;
+use App\Support\PhilippineAddressCatalog;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -16,7 +17,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(PhilippineAddressCatalog::class);
     }
 
     /**

@@ -57,10 +57,17 @@ class ReviseCase
                 throw new CaseDataInvariantException('Please select at least one crime.');
             }
 
-            $activeOffenseCount = Offense::query()->whereIn('id', $offenseIds)->where('is_active', true)->count();
+            $existingOffenseIds = $case->offenses()->pluck('offenses.id')->all();
+            $allowedOffenseCount = Offense::query()
+                ->whereIn('id', $offenseIds)
+                ->where(function ($query) use ($existingOffenseIds): void {
+                    $query->where('is_active', true)
+                        ->orWhereIn('id', $existingOffenseIds);
+                })
+                ->count();
 
-            if ($activeOffenseCount !== count($offenseIds)) {
-                throw new CaseDataInvariantException('Every selected crime must exist and be active.');
+            if ($allowedOffenseCount !== count($offenseIds)) {
+                throw new CaseDataInvariantException('Every selected crime must exist and be active or already belong to this case.');
             }
 
             $parties = $data['parties'];
