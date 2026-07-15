@@ -57,7 +57,7 @@ class ProcessServerCaseListTest extends TestCase
                 ->where('can_create_case', false)
                 ->where('list_url', '/process-server/cases')
                 ->where('cases.total', 11)
-                ->has('cases.data', 10)
+                ->has('cases.data', 6)
                 ->has('cases.data.0', fn (Assert $case) => $case
                     ->hasAll([
                         'docket_number',
@@ -74,10 +74,13 @@ class ProcessServerCaseListTest extends TestCase
                     ->missing('pin')
                     ->missing('pin_hash')
                     ->missing('pin_document_secret')
+                    ->missing('command_status')
+                    ->missing('can_submit_resolution')
+                    ->missing('can_generate_subpoena')
                     ->etc()));
 
         $this->actingAs($processServer)
-            ->get('/process-server/cases?search=RTC%20Cabanatuan')
+            ->get('/process-server/cases?search=For%20Filing&filter=resolution_verdict')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->has('cases.data', 1)
@@ -92,7 +95,7 @@ class ProcessServerCaseListTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->where('cases.total', 0));
 
         $this->actingAs($processServer)
-            ->get('/process-server/cases?search=Pending')
+            ->get('/process-server/cases?search=Pending&filter=resolution_verdict')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('cases.total', 10)
@@ -100,17 +103,18 @@ class ProcessServerCaseListTest extends TestCase
                 ->where('cases.data.0.court', null)
                 ->where('cases.data.0.verdict_date', null));
 
-        foreach (['docket_number', 'crime', 'complainant', 'respondent', 'police_station', 'date', 'assigned_prosecutor', 'resolution_verdict', 'court', 'verdict_date'] as $sort) {
+        foreach (['docket_number', 'crime', 'complainant', 'respondent', 'police_station', 'assigned_prosecutor', 'resolution_verdict', 'verdict_date'] as $sort) {
             $this->actingAs($processServer)
-                ->get('/process-server/cases?sort='.$sort.'&direction=asc')
+                ->get('/process-server/cases?sort='.$sort.'&order=asc')
                 ->assertOk();
         }
 
-        foreach (['court', 'verdict_date'] as $sort) {
-            $this->actingAs($processServer)
-                ->get('/process-server/cases?sort='.$sort.'&direction=asc')
-                ->assertInertia(fn (Assert $page) => $page->where('cases.data.0.id', $resolvedCase->id));
-        }
+        $this->actingAs($processServer)
+            ->get('/process-server/cases?sort=verdict_date&order=asc')
+            ->assertInertia(fn (Assert $page) => $page->where('cases.data.0.id', $deniedCase->id));
+        $this->actingAs($processServer)
+            ->get('/process-server/cases?sort=verdict_date&order=desc')
+            ->assertInertia(fn (Assert $page) => $page->where('cases.data.0.id', $resolvedCase->id));
 
         $this->actingAs($processServer)
             ->get('/cases')

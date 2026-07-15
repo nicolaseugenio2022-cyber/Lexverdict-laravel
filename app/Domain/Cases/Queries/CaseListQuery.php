@@ -3,13 +3,11 @@
 namespace App\Domain\Cases\Queries;
 
 use App\Domain\Cases\Actions\CaseAccess;
+use App\Domain\Cases\Enums\PartyRole;
 use App\Domain\Identity\Enums\StaffRole;
 use App\Domain\Resolutions\Enums\ResolutionStatus;
 use App\Domain\Resolutions\Enums\ResolutionVerdict;
-use App\Models\CaseParty;
 use App\Models\LegalCase;
-use App\Models\Offense;
-use App\Models\StaffProfile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -17,6 +15,30 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class CaseListQuery
 {
+    private const PER_PAGE = 6;
+
+    /** @var array<string, string> */
+    private const FILTER_OPTIONS = [
+        'docket_number' => 'Docket No.',
+        'crime' => 'Case',
+        'complainant' => 'Complainant',
+        'respondent' => 'Respondent',
+        'police_station' => 'Police Station',
+        'assigned_prosecutor' => 'Prosecutor',
+        'resolution_verdict' => 'Verdict',
+    ];
+
+    /** @var array<string, string> */
+    private const SORT_OPTIONS = [
+        'docket_number' => 'Docket No.',
+        'crime' => 'Case',
+        'police_station' => 'Police Station',
+        'assigned_prosecutor' => 'Prosecutor',
+        'resolution_verdict' => 'Verdict',
+        'complainant' => 'Complainant',
+        'respondent' => 'Respondent',
+    ];
+
     public function __construct(private readonly CaseAccess $access) {}
 
     /**
@@ -24,24 +46,53 @@ class CaseListQuery
      */
     public function paginate(User $user, Request $request): LengthAwarePaginator
     {
-        $query = LegalCase::query()
-            ->with(['assignedProsecutor.staffProfile', 'createdBy.staffProfile', 'offenses', 'parties', 'resolution']);
-
-        $isProcessServer = $user->hasRole(StaffRole::ProcessServer);
+        $parameters = $this->parameters($user, $request);
+        $query = LegalCase::query()->with([
+            'assignedProsecutor.staffProfile',
+            'createdBy.staffProfile',
+            'offenses' => fn ($query) => $query->orderBy('name'),
+            'parties' => fn ($query) => $query->orderBy('role')->orderBy('position'),
+            'resolution',
+        ]);
 
         $this->scope($query, $user);
-        $this->search($query, (string) $request->query('search', ''), $isProcessServer);
-        if (! $isProcessServer) {
-            $this->filterStatus($query, (string) $request->query('status', ''));
-        }
-        $this->sort(
-            $query,
-            (string) $request->query('sort', $isProcessServer ? 'docket_number' : 'date'),
-            (string) $request->query('direction', 'desc'),
-            $isProcessServer,
-        );
+        $this->search($query, $parameters['search'], $parameters['filter']);
+        $this->sort($query, $parameters['sort'], $parameters['order'], $user);
 
-        return $query->paginate(10)->withQueryString();
+        $total = (clone $query)->toBase()->getCountForPagination();
+        $lastPage = max((int) ceil($total / self::PER_PAGE), 1);
+        $page = min(max($request->integer('page', 1), 1), $lastPage);
+
+        return $query->paginate(self::PER_PAGE, page: $page, total: $total)->withQueryString();
+    }
+
+    /**
+     * @return array{search: string, filter: string, sort: string, order: string}
+     */
+    public function parameters(User $user, Request $request): array
+    {
+        $filter = (string) $request->query('filter', '');
+        $sort = (string) $request->query('sort', 'docket_number');
+        $allowedSorts = array_keys($this->sortOptionMap($user));
+
+        return [
+            'search' => trim((string) $request->query('search', '')),
+            'filter' => array_key_exists($filter, self::FILTER_OPTIONS) ? $filter : '',
+            'sort' => in_array($sort, $allowedSorts, true) ? $sort : 'docket_number',
+            'order' => $request->query('order') === 'asc' ? 'asc' : 'desc',
+        ];
+    }
+
+    /** @return list<array{value: string, label: string}> */
+    public function filterOptions(): array
+    {
+        return $this->options(self::FILTER_OPTIONS);
+    }
+
+    /** @return list<array{value: string, label: string}> */
+    public function sortOptions(User $user): array
+    {
+        return $this->options($this->sortOptionMap($user));
     }
 
     /**
@@ -49,7 +100,7 @@ class CaseListQuery
      */
     private function scope(Builder $query, User $user): void
     {
-        if ($user->hasRole(StaffRole::Superuser)) {
+        if ($user->hasRole(StaffRole::Superuser) || $user->hasRole(StaffRole::ProcessServer)) {
             return;
         }
 
@@ -66,62 +117,81 @@ class CaseListQuery
             return;
         }
 
-        if ($user->hasRole(StaffRole::ProcessServer)) {
-            return;
-        }
-
         $query->whereRaw('1 = 0');
     }
 
     /**
      * @param  Builder<LegalCase>  $query
      */
-    private function search(Builder $query, string $search, bool $includeProcessServerProjection): void
+    private function search(Builder $query, string $term, string $filter): void
     {
-        $term = trim($search);
-
         if ($term === '') {
             return;
         }
 
-        $query->where(function (Builder $query) use ($term, $includeProcessServerProjection): void {
-            $query->where('docket_number', 'ilike', '%'.$term.'%')
-                ->orWhere('police_station', 'ilike', '%'.$term.'%')
-                ->orWhereHas('parties', function (Builder $query) use ($term): void {
-                    $query->where('first_name', 'ilike', '%'.$term.'%')
-                        ->orWhere('last_name', 'ilike', '%'.$term.'%');
-                })
-                ->orWhereHas('offenses', function (Builder $query) use ($term): void {
-                    $query->where('name', 'ilike', '%'.$term.'%');
-                });
+        $query->where(function (Builder $query) use ($term, $filter): void {
+            if ($filter !== '') {
+                $this->searchField($query, $filter, $term, false);
 
-            if ($includeProcessServerProjection) {
-                $query->orWhereHas('assignedProsecutor', function (Builder $query) use ($term): void {
-                    $query->where('username', 'ilike', '%'.$term.'%')
-                        ->orWhereHas('staffProfile', function (Builder $query) use ($term): void {
-                            $query->where('first_name', 'ilike', '%'.$term.'%')
-                                ->orWhere('middle_name', 'ilike', '%'.$term.'%')
-                                ->orWhere('last_name', 'ilike', '%'.$term.'%');
-                        });
-                })->orWhere(function (Builder $query) use ($term): void {
-                    $query->whereHas('resolution', function (Builder $query) use ($term): void {
-                        $query->where('status', ResolutionStatus::Approved->value)
-                            ->whereIn('verdict', ResolutionVerdict::submittableValues())
-                            ->where(function (Builder $query) use ($term): void {
-                                $query->where('verdict', 'ilike', '%'.$term.'%')
-                                    ->orWhere(function (Builder $query) use ($term): void {
-                                        $query->where('verdict', ResolutionVerdict::ForFiling->value)
-                                            ->where('court', 'ilike', '%'.$term.'%');
-                                    });
-                            });
-                    });
+                return;
+            }
 
-                    if (stripos(ResolutionVerdict::Pending->value, $term) !== false) {
-                        $query->orWhereDoesntHave('resolution', function (Builder $query): void {
-                            $query->where('status', ResolutionStatus::Approved->value)
-                                ->whereIn('verdict', ResolutionVerdict::submittableValues());
-                        });
-                    }
+            foreach (['docket_number', 'crime', 'complainant', 'respondent', 'police_station', 'assigned_prosecutor'] as $index => $field) {
+                $this->searchField($query, $field, $term, $index > 0);
+            }
+        });
+    }
+
+    /**
+     * @param  Builder<LegalCase>  $query
+     */
+    private function searchField(Builder $query, string $field, string $term, bool $or): void
+    {
+        $method = $or ? 'orWhere' : 'where';
+        $like = '%'.$term.'%';
+
+        if ($field === 'docket_number' || $field === 'police_station') {
+            $query->{$method}($field, 'ilike', $like);
+
+            return;
+        }
+
+        if ($field === 'crime') {
+            $query->{$method.'Raw'}(
+                "(SELECT string_agg(offenses.name, ', ' ORDER BY offenses.name) FROM offenses JOIN case_offenses ON case_offenses.offense_id = offenses.id WHERE case_offenses.case_id = cases.id) ILIKE ?",
+                [$like],
+            );
+
+            return;
+        }
+
+        if ($field === 'complainant' || $field === 'respondent') {
+            $role = $field === 'complainant' ? PartyRole::Complainant->value : PartyRole::Respondent->value;
+            $query->{$method.'Raw'}(
+                "(SELECT string_agg(case_parties.last_name, ', ' ORDER BY case_parties.position) FROM case_parties WHERE case_parties.case_id = cases.id AND case_parties.role = ?) ILIKE ?",
+                [$role, $like],
+            );
+
+            return;
+        }
+
+        if ($field === 'assigned_prosecutor') {
+            $query->{$method.'Raw'}($this->prosecutorProjection().' ILIKE ?', [$like]);
+
+            return;
+        }
+
+        $query->{$method}(function (Builder $query) use ($term): void {
+            $query->whereHas('resolution', function (Builder $query) use ($term): void {
+                $query->where('status', ResolutionStatus::Approved->value)
+                    ->whereIn('verdict', ResolutionVerdict::submittableValues())
+                    ->where('verdict', 'ilike', '%'.$term.'%');
+            });
+
+            if (stripos(ResolutionVerdict::Pending->value, $term) !== false) {
+                $query->orWhereDoesntHave('resolution', function (Builder $query): void {
+                    $query->where('status', ResolutionStatus::Approved->value)
+                        ->whereIn('verdict', ResolutionVerdict::submittableValues());
                 });
             }
         });
@@ -130,47 +200,15 @@ class CaseListQuery
     /**
      * @param  Builder<LegalCase>  $query
      */
-    private function filterStatus(Builder $query, string $status): void
+    private function sort(Builder $query, string $sort, string $direction, User $user): void
     {
-        if ($status !== '') {
-            $query->where('subpoena_status', $status);
-        }
-    }
-
-    /**
-     * @param  Builder<LegalCase>  $query
-     */
-    private function sort(Builder $query, string $sort, string $direction, bool $isProcessServer): void
-    {
-        if ($isProcessServer) {
-            $this->sortProcessServerProjection($query, $sort, $direction);
-
-            return;
-        }
-
-        $column = match ($sort) {
-            'docket_number' => 'docket_number',
-            'police_station' => 'police_station',
-            'status' => 'subpoena_status',
-            default => 'date',
-        };
-
-        $query->orderBy($column, $direction === 'asc' ? 'asc' : 'desc')->orderBy('docket_number');
-    }
-
-    /** @param Builder<LegalCase> $query */
-    private function sortProcessServerProjection(Builder $query, string $sort, string $direction): void
-    {
-        $direction = $direction === 'asc' ? 'asc' : 'desc';
-
         if ($sort === 'resolution_verdict') {
             $query->orderByRaw(
-                "COALESCE((SELECT CASE WHEN status = ? AND verdict IN (?, ?) THEN verdict ELSE ? END FROM resolutions WHERE resolutions.case_id = cases.id LIMIT 1), ?) {$direction}",
+                "COALESCE((SELECT CASE WHEN status = ? AND verdict IN (?, ?) THEN verdict END FROM resolutions WHERE resolutions.case_id = cases.id LIMIT 1), ?) {$direction}",
                 [
                     ResolutionStatus::Approved->value,
                     ResolutionVerdict::ForFiling->value,
                     ResolutionVerdict::Dismissed->value,
-                    ResolutionVerdict::Pending->value,
                     ResolutionVerdict::Pending->value,
                 ],
             )->orderBy('docket_number');
@@ -178,18 +216,10 @@ class CaseListQuery
             return;
         }
 
-        if ($sort === 'court') {
+        if ($sort === 'verdict_date' && $user->hasRole(StaffRole::ProcessServer)) {
+            $nullOrder = $direction === 'asc' ? 'NULLS FIRST' : 'NULLS LAST';
             $query->orderByRaw(
-                "(SELECT CASE WHEN status = ? AND verdict = ? THEN court END FROM resolutions WHERE resolutions.case_id = cases.id LIMIT 1) {$direction}",
-                [ResolutionStatus::Approved->value, ResolutionVerdict::ForFiling->value],
-            )->orderBy('docket_number');
-
-            return;
-        }
-
-        if ($sort === 'verdict_date') {
-            $query->orderByRaw(
-                "(SELECT CASE WHEN status = ? AND verdict IN (?, ?) THEN verdict_date END FROM resolutions WHERE resolutions.case_id = cases.id LIMIT 1) {$direction}",
+                "(SELECT CASE WHEN status = ? AND verdict IN (?, ?) THEN verdict_date END FROM resolutions WHERE resolutions.case_id = cases.id LIMIT 1) {$direction} {$nullOrder}",
                 [
                     ResolutionStatus::Approved->value,
                     ResolutionVerdict::ForFiling->value,
@@ -200,44 +230,55 @@ class CaseListQuery
             return;
         }
 
-        $sortQuery = match ($sort) {
-            'crime' => Offense::query()
-                ->select('offenses.name')
-                ->join('case_offenses', 'case_offenses.offense_id', '=', 'offenses.id')
-                ->whereColumn('case_offenses.case_id', 'cases.id')
-                ->orderBy('offenses.name')
-                ->limit(1),
-            'complainant' => CaseParty::query()
-                ->select('last_name')
-                ->whereColumn('case_id', 'cases.id')
-                ->where('role', 'Complainant')
-                ->orderBy('position')
-                ->limit(1),
-            'respondent' => CaseParty::query()
-                ->select('last_name')
-                ->whereColumn('case_id', 'cases.id')
-                ->where('role', 'Respondent')
-                ->orderBy('position')
-                ->limit(1),
-            'assigned_prosecutor' => StaffProfile::query()
-                ->select('last_name')
-                ->whereColumn('user_id', 'cases.assigned_prosecutor_id')
-                ->limit(1),
+        $sortExpression = match ($sort) {
+            'crime' => "(SELECT string_agg(offenses.name, ', ' ORDER BY offenses.name) FROM offenses JOIN case_offenses ON case_offenses.offense_id = offenses.id WHERE case_offenses.case_id = cases.id)",
+            'complainant' => $this->partyProjection(PartyRole::Complainant),
+            'respondent' => $this->partyProjection(PartyRole::Respondent),
+            'assigned_prosecutor' => $this->prosecutorProjection(),
             default => null,
         };
 
-        if ($sortQuery !== null) {
-            $query->orderBy($sortQuery, $direction)->orderBy('docket_number');
+        if ($sortExpression !== null) {
+            $query->orderByRaw("{$sortExpression} {$direction}")->orderBy('docket_number');
 
             return;
         }
 
-        $column = match ($sort) {
-            'date' => 'date',
-            'police_station' => 'police_station',
-            default => 'docket_number',
-        };
-
+        $column = $sort === 'police_station' ? 'police_station' : 'docket_number';
         $query->orderBy($column, $direction)->orderBy('docket_number');
+    }
+
+    private function partyProjection(PartyRole $role): string
+    {
+        return "(SELECT string_agg(case_parties.last_name, ', ' ORDER BY case_parties.position) FROM case_parties WHERE case_parties.case_id = cases.id AND case_parties.role = '{$role->value}')";
+    }
+
+    private function prosecutorProjection(): string
+    {
+        return "COALESCE((SELECT NULLIF(trim(concat_ws(' ', staff_profiles.first_name, staff_profiles.middle_name, staff_profiles.last_name, staff_profiles.suffix)), '') FROM staff_profiles WHERE staff_profiles.user_id = cases.assigned_prosecutor_id LIMIT 1), (SELECT users.username FROM users WHERE users.id = cases.assigned_prosecutor_id LIMIT 1))";
+    }
+
+    /**
+     * @param  array<string, string>  $options
+     * @return list<array{value: string, label: string}>
+     */
+    private function options(array $options): array
+    {
+        return collect($options)
+            ->map(fn (string $label, string $value): array => compact('value', 'label'))
+            ->values()
+            ->all();
+    }
+
+    /** @return array<string, string> */
+    private function sortOptionMap(User $user): array
+    {
+        $options = self::SORT_OPTIONS;
+
+        if ($user->hasRole(StaffRole::ProcessServer)) {
+            $options['verdict_date'] = 'Verdict Date';
+        }
+
+        return $options;
     }
 }

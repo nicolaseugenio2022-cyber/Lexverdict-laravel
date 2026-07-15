@@ -38,23 +38,31 @@ class CaseController extends Controller
 {
     public function __construct(private readonly PhilippineAddressCatalog $addresses) {}
 
-    public function index(Request $request, CaseListQuery $cases, CaseAccess $access): Response
-    {
-        $isProcessServer = $request->user()->hasRole(StaffRole::ProcessServer);
+    public function index(
+        Request $request,
+        CaseListQuery $cases,
+        CaseAccess $access,
+        ResolutionAccess $resolutionAccess,
+        DocumentAccess $documentAccess,
+    ): Response {
+        $user = $request->user();
+        $isProcessServer = $user->hasRole(StaffRole::ProcessServer);
         $paginatedCases = $cases->paginate($request->user(), $request)
-            ->through(fn (LegalCase $case): array => $this->caseRow($case));
+            ->through(fn (LegalCase $case): array => $this->caseListRow(
+                $case,
+                $user,
+                $resolutionAccess,
+                $documentAccess,
+            ));
 
         return Inertia::render('Cases/Index', [
             'cases' => $paginatedCases,
-            'filters' => [
-                'search' => (string) $request->query('search', ''),
-                'status' => (string) $request->query('status', ''),
-                'sort' => (string) $request->query('sort', $isProcessServer ? 'docket_number' : 'date'),
-                'direction' => (string) $request->query('direction', 'desc'),
-            ],
-            'statuses' => $isProcessServer ? [] : array_map(fn (SubpoenaStatus $status): string => $status->value, SubpoenaStatus::cases()),
-            'can_create_case' => $access->canCreate($request->user()),
+            'filters' => $cases->parameters($user, $request),
+            'filter_options' => $cases->filterOptions(),
+            'sort_options' => $cases->sortOptions($user),
+            'can_create_case' => $access->canCreate($user),
             'is_process_server' => $isProcessServer,
+            'list_role' => $this->caseListRole($user),
             'list_url' => $isProcessServer ? route('process-server.cases.index', absolute: false) : route('cases.index', absolute: false),
         ]);
     }
@@ -196,14 +204,51 @@ class CaseController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function caseRow(LegalCase $case): array
-    {
+    private function caseListRow(
+        LegalCase $case,
+        User $user,
+        ResolutionAccess $resolutionAccess,
+        DocumentAccess $documentAccess,
+    ): array {
         $resolution = $case->resolution;
         $resolutionStatus = $resolution === null ? null : $this->resolutionStatusValue($resolution->status);
         $resolutionVerdict = $resolution === null ? null : $this->resolutionVerdictValue($resolution->verdict);
         $approvedOutcome = $resolutionStatus === ResolutionStatus::Approved->value
             && in_array($resolutionVerdict, [ResolutionVerdict::ForFiling->value, ResolutionVerdict::Dismissed->value], true);
         $forFiling = $approvedOutcome && $resolutionVerdict === ResolutionVerdict::ForFiling->value;
+
+        $projection = [
+            'id' => $case->id,
+            'docket_number' => $case->docket_number,
+            'date' => $this->dateString($case->date),
+            'police_station' => $case->police_station,
+            'assigned_prosecutor_name' => $case->assignedProsecutor?->staffProfile?->displayName() ?? $case->assignedProsecutor?->username,
+            'offenses' => $case->offenses->pluck('name')->values()->all(),
+            'complainants' => $this->partyLastNames($case, PartyRole::Complainant),
+            'respondents' => $this->partyLastNames($case, PartyRole::Respondent),
+            'resolution_verdict' => $approvedOutcome ? $resolutionVerdict : ResolutionVerdict::Pending->value,
+            'court' => $forFiling ? $resolution->court : null,
+            'verdict_date' => $approvedOutcome ? $this->dateString($resolution->verdict_date) : null,
+        ];
+
+        if ($user->hasRole(StaffRole::ProcessServer)) {
+            return $projection;
+        }
+
+        return [
+            ...$projection,
+            'command_status' => $this->caseListCommandStatus($user, $resolutionStatus, $resolutionVerdict),
+            'can_submit_resolution' => $resolution === null && $resolutionAccess->canSubmit($user, $case),
+            'can_generate_subpoena' => $resolution === null && $documentAccess->canGenerate($user, $case),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function caseDetail(LegalCase $case): array
+    {
+        $case->loadMissing(['assignedProsecutor.staffProfile', 'createdBy.staffProfile', 'offenses', 'parties']);
 
         return [
             'id' => $case->id,
@@ -216,27 +261,39 @@ class CaseController extends Controller
             'offenses' => $case->offenses->pluck('name')->values()->all(),
             'complainants' => $this->partyLastNames($case, PartyRole::Complainant),
             'respondents' => $this->partyLastNames($case, PartyRole::Respondent),
-            'resolution_verdict' => $approvedOutcome ? $resolutionVerdict : ResolutionVerdict::Pending->value,
-            'court' => $forFiling ? $resolution->court : null,
-            'verdict_date' => $approvedOutcome ? $this->dateString($resolution->verdict_date) : null,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function caseDetail(LegalCase $case): array
-    {
-        $case->loadMissing(['assignedProsecutor.staffProfile', 'createdBy.staffProfile', 'offenses', 'parties']);
-
-        return [
-            ...$this->caseRow($case),
             'hearing_date_1' => $this->dateTimeInput($case->hearing_date_1),
             'hearing_date_2' => $this->dateTimeInput($case->hearing_date_2),
             'created_by_name' => $case->createdBy?->staffProfile?->displayName() ?? $case->createdBy?->username,
             'offense_ids' => $case->offenses->pluck('id')->values()->all(),
             'parties' => $this->partyDetails($case),
         ];
+    }
+
+    private function caseListRole(User $user): string
+    {
+        return match (true) {
+            $user->hasRole(StaffRole::Superuser) => 'administrator',
+            $user->hasRole(StaffRole::Secretary) => 'secretary',
+            $user->hasRole(StaffRole::Prosecutor) => 'prosecutor',
+            default => 'process_server',
+        };
+    }
+
+    private function caseListCommandStatus(User $user, ?string $resolutionStatus, ?string $resolutionVerdict): ?string
+    {
+        if ($user->hasRole(StaffRole::ProcessServer)) {
+            return null;
+        }
+
+        if ($resolutionStatus === ResolutionStatus::Approved->value) {
+            return 'Resolved';
+        }
+
+        if (in_array($resolutionVerdict, ResolutionVerdict::submittableValues(), true)) {
+            return 'Resolving...';
+        }
+
+        return $user->hasRole(StaffRole::Prosecutor) ? 'Due for Hearing' : null;
     }
 
     /**

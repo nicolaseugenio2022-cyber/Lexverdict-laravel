@@ -34,6 +34,47 @@ async function expectChartRendered(page: Page, testId: string) {
         .toBe(true);
 }
 
+async function expectLegacyCaseList(page: Page, processServer = false) {
+    await expect(
+        page.getByRole('columnheader', {
+            name: processServer ? 'Docket Number' : 'Docket No.',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('columnheader', {
+            name: processServer ? 'Crime/Case' : 'Case',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('columnheader', { name: 'Complainant', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Respondent', exact: true })).toBeVisible();
+    await expect(
+        page.getByRole('columnheader', { name: 'Police Station', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Date', exact: true })).toBeVisible();
+    await expect(
+        page.getByRole('columnheader', {
+            name: processServer ? 'Assigned Prosecutor' : 'Prosecutor',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('columnheader', {
+            name: processServer ? 'Resolution Verdict' : 'Verdict',
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Court', exact: true })).toBeVisible();
+    await expect(page.getByLabel('Sort by')).toBeVisible();
+    await expect(page.getByLabel('Order')).toBeVisible();
+    await expect(page.getByLabel('Search', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Search field')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Search' })).toBeVisible();
+}
+
 test('each staff role receives only its approved navigation and route access', async ({ page }) => {
     await login(page, 'e2e_admin', '/dashboard');
     await expect(page.getByRole('link', { name: 'Dashboard' })).toBeVisible();
@@ -47,6 +88,11 @@ test('each staff role receives only its approved navigation and route access', a
         'aria-current',
         'page',
     );
+    await page.getByRole('link', { name: 'Cases', exact: true }).click();
+    await expectLegacyCaseList(page);
+    await expect(page.getByRole('columnheader', { name: 'Date Filed', exact: true })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Command', exact: true })).toBeVisible();
+    await expect(page.getByText('Resolved', { exact: true })).toBeVisible();
     await page.getByRole('link', { name: 'Manage Crimes' }).click();
     await expect(page).toHaveURL(/\/admin\/offenses$/);
     await expect(page.getByRole('link', { name: 'Manage Crimes' })).toHaveAttribute(
@@ -73,7 +119,14 @@ test('each staff role receives only its approved navigation and route access', a
     expect(response?.status()).toBe(403);
     response = await page.goto('/dashboard');
     expect(response?.status()).toBe(403);
-    await page.goto('/subpoena-reviews');
+    await page.goto('/cases');
+    await expectLegacyCaseList(page);
+    await expect(
+        page.getByRole('columnheader', { name: 'Verdict Date', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Command', exact: true })).toBeVisible();
+    await expect(page.getByText('Due for Hearing', { exact: true })).toBeVisible();
+    await expect(page.getByText('Resolved', { exact: true })).toBeVisible();
     await logout(page);
 
     await login(page, 'e2e_secretary', '/cases');
@@ -82,6 +135,10 @@ test('each staff role receives only its approved navigation and route access', a
     await expect(page.getByRole('link', { name: 'Subpoena Review' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Manage Crimes' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Verifying Cases' })).toBeVisible();
+    await expectLegacyCaseList(page);
+    await expect(page.getByRole('columnheader', { name: 'Date Filed', exact: true })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Command', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Generate PDF' })).toBeVisible();
     await page.getByRole('link', { name: 'Verifying Cases' }).click();
     await expect(page).toHaveURL(/\/secretary\/verifying-cases/);
     await expect(page.getByRole('link', { name: 'Verifying Cases' })).toHaveAttribute(
@@ -113,10 +170,11 @@ test('each staff role receives only its approved navigation and route access', a
     await expect(page.getByRole('link', { name: 'Reports' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Manage Crimes' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Verifying Cases' })).toHaveCount(0);
-    await expect(page.getByRole('columnheader', { name: /Docket Number/ })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: /Resolution Verdict/ })).toBeVisible();
-    await expect(page.getByLabel('Search')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Apply' })).toBeVisible();
+    await expectLegacyCaseList(page, true);
+    await expect(
+        page.getByRole('columnheader', { name: 'Verdict Date', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Command' })).toHaveCount(0);
     const casesTable = page.getByRole('region', { name: 'Cases table' });
     await expect(casesTable).toBeVisible();
     expect(await casesTable.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(

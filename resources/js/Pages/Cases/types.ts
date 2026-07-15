@@ -53,5 +53,8 @@ export type CaseRecord = {
     resolution_verdict: 'For Filing' | 'Dismissed' | 'Pending';
     court: string | null;
     verdict_date: string | null;
+    command_status?: 'Resolved' | 'Resolving...' | 'Due for Hearing' | null;
+    can_submit_resolution?: boolean;
+    can_generate_subpoena?: boolean;
     parties?: CasePartyForm[];
 };

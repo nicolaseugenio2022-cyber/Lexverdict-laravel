@@ -5,6 +5,7 @@ import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import type { CaseRecord } from './types';
 
 type PaginationLink = { url: string | null; label: string; active: boolean };
+type ListOption = { value: string; label: string };
 
 type PaginatedCases = {
     data: CaseRecord[];
@@ -18,54 +19,43 @@ type Props = {
     cases: PaginatedCases;
     filters: {
         search: string;
-        status: string;
+        filter: string;
         sort: string;
-        direction: string;
+        order: 'asc' | 'desc';
     };
-    statuses: string[];
+    filter_options: ListOption[];
+    sort_options: ListOption[];
     can_create_case: boolean;
     is_process_server: boolean;
+    list_role: 'administrator' | 'secretary' | 'prosecutor' | 'process_server';
     list_url: string;
 };
 
 export default function Index({
     cases,
     filters,
-    statuses,
+    filter_options,
+    sort_options,
     can_create_case,
     is_process_server,
+    list_role,
     list_url,
 }: Props) {
     const [search, setSearch] = useState(filters.search);
-    const [status, setStatus] = useState(filters.status);
+    const [filter, setFilter] = useState(filters.filter);
+
+    function navigate(values: Partial<Props['filters']>) {
+        router.get(list_url, { ...filters, search, filter, ...values }, { preserveState: true });
+    }
 
     function submit(event: FormEvent) {
         event.preventDefault();
-        router.get(
-            list_url,
-            {
-                search,
-                status: is_process_server ? '' : status,
-                sort: filters.sort,
-                direction: filters.direction,
-            },
-            { preserveState: true },
-        );
+        navigate({});
     }
 
-    function sortBy(sort: string) {
-        const direction = filters.sort === sort && filters.direction === 'asc' ? 'desc' : 'asc';
-        router.get(
-            list_url,
-            {
-                search: filters.search,
-                status: is_process_server ? '' : filters.status,
-                sort,
-                direction,
-            },
-            { preserveState: true },
-        );
-    }
+    const dateColumnLabel =
+        list_role === 'administrator' || list_role === 'secretary' ? 'Date Filed' : 'Verdict Date';
+    const commandColumn = !is_process_server;
 
     return (
         <AuthenticatedLayout>
@@ -78,7 +68,7 @@ export default function Index({
                             <p className="text-sm text-slate-600">
                                 {is_process_server
                                     ? 'Read-only case list.'
-                                    : 'Scoped case list by role and current Prosecutor-Secretary assignment.'}
+                                    : 'Case list for your assigned work.'}
                             </p>
                         </div>
                         {can_create_case && (
@@ -91,42 +81,74 @@ export default function Index({
                         )}
                     </div>
 
-                    <form
-                        onSubmit={submit}
-                        className={`mt-5 grid gap-3 ${is_process_server ? 'md:grid-cols-[1fr_auto]' : 'md:grid-cols-[1fr_180px_auto]'}`}
-                    >
-                        <label className="text-sm font-medium text-slate-700">
-                            Search
-                            <input
-                                className="mt-2 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                value={search}
-                                onChange={(event) => setSearch(event.target.value)}
-                            />
-                        </label>
-                        {!is_process_server && (
+                    <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                        <div className="grid gap-3 sm:grid-cols-2">
                             <label className="text-sm font-medium text-slate-700">
-                                Status
+                                Sort by
                                 <select
+                                    aria-label="Sort by"
                                     className="mt-2 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    value={status}
-                                    onChange={(event) => setStatus(event.target.value)}
+                                    value={filters.sort}
+                                    onChange={(event) => navigate({ sort: event.target.value })}
                                 >
-                                    <option value="">All</option>
-                                    {statuses.map((item) => (
-                                        <option key={item} value={item}>
-                                            {item}
+                                    {sort_options.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
                                         </option>
                                     ))}
                                 </select>
                             </label>
-                        )}
-                        <button
-                            type="submit"
-                            className="min-h-11 self-end rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                            <label className="text-sm font-medium text-slate-700">
+                                Order
+                                <select
+                                    aria-label="Order"
+                                    className="mt-2 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                    value={filters.order}
+                                    onChange={(event) =>
+                                        navigate({ order: event.target.value as 'asc' | 'desc' })
+                                    }
+                                >
+                                    <option value="asc">Ascending</option>
+                                    <option value="desc">Descending</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <form
+                            onSubmit={submit}
+                            className="grid gap-3 sm:grid-cols-[1fr_180px_auto]"
                         >
-                            Apply
-                        </button>
-                    </form>
+                            <label className="text-sm font-medium text-slate-700">
+                                Search
+                                <input
+                                    className="mt-2 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                    value={search}
+                                    onChange={(event) => setSearch(event.target.value)}
+                                />
+                            </label>
+                            <label className="text-sm font-medium text-slate-700">
+                                Search field
+                                <select
+                                    className="mt-2 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                    value={filter}
+                                    onChange={(event) => setFilter(event.target.value)}
+                                >
+                                    <option value="">All Fields</option>
+                                    {filter_options.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                            <button
+                                type="submit"
+                                className="min-h-11 self-end rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                            >
+                                Search
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 <div className="min-w-0 rounded-md border border-slate-200 bg-white">
@@ -137,105 +159,27 @@ export default function Index({
                         aria-label="Cases table"
                     >
                         <table
-                            className={`w-full text-left text-sm ${is_process_server ? 'min-w-[1400px]' : ''}`}
+                            className={`w-full text-left text-sm ${commandColumn ? 'min-w-[1700px]' : 'min-w-[1500px]'}`}
                         >
                             <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                                 <tr>
-                                    {is_process_server ? (
-                                        <>
-                                            <Sortable
-                                                label="Docket Number"
-                                                name="docket_number"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <Sortable
-                                                label="Crime/Case"
-                                                name="crime"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <Sortable
-                                                label="Complainant"
-                                                name="complainant"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <Sortable
-                                                label="Respondent"
-                                                name="respondent"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <Sortable
-                                                label="Police Station"
-                                                name="police_station"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <Sortable
-                                                label="Date"
-                                                name="date"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <Sortable
-                                                label="Assigned Prosecutor"
-                                                name="assigned_prosecutor"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <Sortable
-                                                label="Resolution Verdict"
-                                                name="resolution_verdict"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <Sortable
-                                                label="Court"
-                                                name="court"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <Sortable
-                                                label="Verdict Date"
-                                                name="verdict_date"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Sortable
-                                                label="Docket No."
-                                                name="docket_number"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <Sortable
-                                                label="Date"
-                                                name="date"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <th className="px-4 py-3 font-semibold">Parties</th>
-                                            <th className="px-4 py-3 font-semibold">Crimes</th>
-                                            <Sortable
-                                                label="Police Station"
-                                                name="police_station"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <Sortable
-                                                label="Status"
-                                                name="status"
-                                                current={filters.sort}
-                                                onSort={sortBy}
-                                            />
-                                            <th className="px-4 py-3 font-semibold">Prosecutor</th>
-                                            <th className="px-4 py-3 font-semibold">Action</th>
-                                        </>
-                                    )}
+                                    <Header>
+                                        {is_process_server ? 'Docket Number' : 'Docket No.'}
+                                    </Header>
+                                    <Header>{is_process_server ? 'Crime/Case' : 'Case'}</Header>
+                                    <Header>Complainant</Header>
+                                    <Header>Respondent</Header>
+                                    <Header>Police Station</Header>
+                                    <Header>Date</Header>
+                                    <Header>
+                                        {is_process_server ? 'Assigned Prosecutor' : 'Prosecutor'}
+                                    </Header>
+                                    <Header>
+                                        {is_process_server ? 'Resolution Verdict' : 'Verdict'}
+                                    </Header>
+                                    <Header>Court</Header>
+                                    <Header>{dateColumnLabel}</Header>
+                                    {commandColumn && <Header>Command</Header>}
                                 </tr>
                             </thead>
                             <tbody>
@@ -244,74 +188,37 @@ export default function Index({
                                         key={caseRecord.id}
                                         className="border-b border-slate-100 align-top"
                                     >
-                                        {is_process_server ? (
-                                            <>
-                                                <td className="px-4 py-3 font-medium text-slate-950">
-                                                    {caseRecord.docket_number}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {caseRecord.offenses.join(', ')}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {caseRecord.complainants.join(', ')}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {caseRecord.respondents.join(', ')}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {caseRecord.police_station}
-                                                </td>
-                                                <td className="px-4 py-3">{caseRecord.date}</td>
-                                                <td className="px-4 py-3">
-                                                    {caseRecord.assigned_prosecutor_name}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {caseRecord.resolution_verdict}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {caseRecord.court ?? '-'}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {caseRecord.verdict_date ?? '-'}
-                                                </td>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <td className="px-4 py-3 font-medium text-slate-950">
-                                                    {caseRecord.docket_number}
-                                                </td>
-                                                <td className="px-4 py-3">{caseRecord.date}</td>
-                                                <td className="px-4 py-3">
-                                                    <p>
-                                                        Complainant:{' '}
-                                                        {caseRecord.complainants.join(', ')}
-                                                    </p>
-                                                    <p>
-                                                        Respondent:{' '}
-                                                        {caseRecord.respondents.join(', ')}
-                                                    </p>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {caseRecord.offenses.join(', ')}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {caseRecord.police_station}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {caseRecord.subpoena_status}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {caseRecord.assigned_prosecutor_name}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <Link
-                                                        href={`/cases/${caseRecord.id}`}
-                                                        className="font-semibold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                                    >
-                                                        View
-                                                    </Link>
-                                                </td>
-                                            </>
+                                        <Cell className="font-medium text-slate-950">
+                                            {caseRecord.docket_number}
+                                        </Cell>
+                                        <Cell>{value(caseRecord.offenses.join(', '))}</Cell>
+                                        <Cell>{value(caseRecord.complainants.join(', '))}</Cell>
+                                        <Cell>{value(caseRecord.respondents.join(', '))}</Cell>
+                                        <Cell>{value(caseRecord.police_station)}</Cell>
+                                        <Cell>{formatDate(caseRecord.date)}</Cell>
+                                        <Cell>{value(caseRecord.assigned_prosecutor_name)}</Cell>
+                                        <Cell>
+                                            <span
+                                                className={
+                                                    caseRecord.resolution_verdict === 'For Filing'
+                                                        ? 'font-semibold text-emerald-700'
+                                                        : caseRecord.resolution_verdict ===
+                                                            'Dismissed'
+                                                          ? 'font-semibold text-red-700'
+                                                          : undefined
+                                                }
+                                            >
+                                                {caseRecord.resolution_verdict === 'Pending'
+                                                    ? 'PENDING'
+                                                    : caseRecord.resolution_verdict}
+                                            </span>
+                                        </Cell>
+                                        <Cell>{value(caseRecord.court)}</Cell>
+                                        <Cell>{formatDate(caseRecord.verdict_date)}</Cell>
+                                        {commandColumn && (
+                                            <Cell>
+                                                <CaseCommands caseRecord={caseRecord} />
+                                            </Cell>
                                         )}
                                     </tr>
                                 ))}
@@ -319,7 +226,7 @@ export default function Index({
                                     <tr>
                                         <td
                                             className="px-4 py-8 text-center text-slate-600"
-                                            colSpan={is_process_server ? 10 : 8}
+                                            colSpan={commandColumn ? 11 : 10}
                                         >
                                             No cases found.
                                         </td>
@@ -332,7 +239,7 @@ export default function Index({
                         <span>
                             Showing {cases.from ?? 0} to {cases.to ?? 0} of {cases.total}
                         </span>
-                        <div className="flex flex-wrap gap-2">
+                        <nav aria-label="Cases pagination" className="flex flex-wrap gap-2">
                             {cases.links.map((link, index) =>
                                 link.url ? (
                                     <Link
@@ -349,7 +256,7 @@ export default function Index({
                                     />
                                 ),
                             )}
-                        </div>
+                        </nav>
                     </div>
                 </div>
             </section>
@@ -357,27 +264,60 @@ export default function Index({
     );
 }
 
-function Sortable({
-    label,
-    name,
-    current,
-    onSort,
-}: {
-    label: string;
-    name: string;
-    current: string;
-    onSort: (name: string) => void;
-}) {
+function CaseCommands({ caseRecord }: { caseRecord: CaseRecord }) {
     return (
-        <th className="px-4 py-3 font-semibold">
-            <button
-                type="button"
-                onClick={() => onSort(name)}
-                className="min-h-10 rounded-md px-2 text-left hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
-            >
-                {label}
-                {current === name ? ' *' : ''}
-            </button>
-        </th>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {caseRecord.command_status && (
+                <span
+                    className={
+                        caseRecord.command_status === 'Resolved'
+                            ? 'font-semibold text-emerald-700'
+                            : 'text-slate-700'
+                    }
+                >
+                    {caseRecord.command_status}
+                </span>
+            )}
+            {caseRecord.can_submit_resolution && (
+                <Link
+                    href={`/cases/${caseRecord.id}/resolution/create`}
+                    className="font-semibold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                >
+                    Resolve
+                </Link>
+            )}
+            {caseRecord.can_generate_subpoena && (
+                <button
+                    type="button"
+                    onClick={() => router.post(`/cases/${caseRecord.id}/documents/subpoena`)}
+                    className="font-semibold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                >
+                    Generate PDF
+                </button>
+            )}
+        </div>
     );
+}
+
+function Header({ children }: { children: React.ReactNode }) {
+    return <th className="whitespace-nowrap px-4 py-3 font-semibold">{children}</th>;
+}
+
+function Cell({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+    return <td className={`px-4 py-3 ${className}`}>{children}</td>;
+}
+
+function value(input: string | null) {
+    return input && input.trim() !== '' ? input : '-';
+}
+
+function formatDate(input: string | null) {
+    if (!input) return '-';
+
+    return new Intl.DateTimeFormat('en-US', {
+        month: 'long',
+        day: '2-digit',
+        year: 'numeric',
+        timeZone: 'UTC',
+    }).format(new Date(`${input}T00:00:00Z`));
 }
