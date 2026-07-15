@@ -129,8 +129,13 @@ export default function Index({
                     </form>
                 </div>
 
-                <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
-                    <div className="overflow-x-auto">
+                <div className="min-w-0 rounded-md border border-slate-200 bg-white">
+                    <div
+                        className="table-scroll"
+                        tabIndex={0}
+                        role="region"
+                        aria-label="Cases table"
+                    >
                         <table
                             className={`w-full text-left text-sm ${is_process_server ? 'min-w-[1400px]' : ''}`}
                         >
@@ -339,7 +344,7 @@ export default function Index({
                                 ) : (
                                     <span
                                         key={`${link.label}-${index}`}
-                                        className="min-h-10 rounded-md border border-slate-200 px-3 py-2 text-slate-400"
+                                        className="min-h-10 rounded-md border border-slate-200 px-3 py-2 text-slate-600"
                                         dangerouslySetInnerHTML={{ __html: link.label }}
                                     />
                                 ),

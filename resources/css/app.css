@@ -26,4 +26,16 @@
         outline: 2px solid #1e3a8a;
         outline-offset: 2px;
     }
+
+    .table-scroll {
+        min-width: 0;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-gutter: stable;
+    }
+
+    .table-scroll:focus {
+        outline: 2px solid #1e3a8a;
+        outline-offset: -2px;
+    }
 }

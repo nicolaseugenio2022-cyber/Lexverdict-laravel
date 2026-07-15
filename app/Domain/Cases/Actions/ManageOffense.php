@@ -41,9 +41,9 @@ class ManageOffense
         });
     }
 
-    public function update(Offense $offense, string $name, ?string $lawReference, bool $isActive, User $actor): Offense
+    public function update(Offense $offense, string $name, ?string $lawReference, User $actor): Offense
     {
-        return DB::transaction(function () use ($offense, $name, $lawReference, $isActive, $actor): Offense {
+        return DB::transaction(function () use ($offense, $name, $lawReference, $actor): Offense {
             $offense = Offense::query()->lockForUpdate()->findOrFail($offense->id);
             $normalizedName = $this->normalizeName($name);
 
@@ -64,7 +64,6 @@ class ManageOffense
                 'name' => trim($name),
                 'normalized_name' => $normalizedName,
                 'law_reference' => $lawReference ? trim($lawReference) : null,
-                'is_active' => $isActive,
             ]);
 
             $this->audit->record('offense.updated', $actor, Offense::class, $offense->id, [
@@ -72,6 +71,33 @@ class ManageOffense
                 'law_reference' => $offense->law_reference,
                 'is_active' => $offense->is_active,
             ]);
+
+            return $offense;
+        });
+    }
+
+    public function setActive(Offense $offense, bool $isActive, User $actor): Offense
+    {
+        return DB::transaction(function () use ($offense, $isActive, $actor): Offense {
+            $offense = Offense::query()->lockForUpdate()->findOrFail($offense->id);
+
+            if ($offense->is_active === $isActive) {
+                return $offense;
+            }
+
+            $offense->update(['is_active' => $isActive]);
+
+            $this->audit->record(
+                $isActive ? 'offense.restored' : 'offense.deactivated',
+                $actor,
+                Offense::class,
+                $offense->id,
+                [
+                    'name' => $offense->name,
+                    'law_reference' => $offense->law_reference,
+                    'is_active' => $offense->is_active,
+                ],
+            );
 
             return $offense;
         });

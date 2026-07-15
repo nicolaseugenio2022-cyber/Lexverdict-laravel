@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AssignmentController;
 use App\Http\Controllers\Admin\AuditEventController;
+use App\Http\Controllers\Admin\OffenseController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -50,6 +51,14 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::post('resolution-reviews/{resolution}/deny', [ResolutionReviewController::class, 'deny'])->name('resolution-reviews.deny');
 
     Route::prefix('admin')->name('admin.')->group(function (): void {
+        Route::middleware('can:manage-offenses')->group(function (): void {
+            Route::get('offenses', [OffenseController::class, 'index'])->name('offenses.index');
+            Route::post('offenses', [OffenseController::class, 'store'])->name('offenses.store');
+            Route::patch('offenses/{offenseId}', [OffenseController::class, 'update'])->name('offenses.update');
+            Route::patch('offenses/{offenseId}/deactivate', [OffenseController::class, 'deactivate'])->name('offenses.deactivate');
+            Route::patch('offenses/{offenseId}/restore', [OffenseController::class, 'restore'])->name('offenses.restore');
+        });
+
         Route::resource('users', UserController::class)->except(['show', 'destroy']);
         Route::patch('users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
         Route::patch('users/{user}/restore', [UserController::class, 'restore'])->name('users.restore');
