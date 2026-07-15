@@ -65,7 +65,7 @@ export default function Index({ cases, filters }: Props) {
                 </header>
 
                 <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
-                    <div className="overflow-x-auto">
+                    <div className="table-scroll" tabIndex={0} role="region" aria-label="Subpoena Review table">
                         <table className="w-full min-w-[900px] text-left text-sm">
                             <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                                 <tr>

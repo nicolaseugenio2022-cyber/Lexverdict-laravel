@@ -101,7 +101,7 @@ export default function Show({ caseRecord, currentRevision, previousRevision, de
                 <section className="rounded-md border border-slate-200 bg-white p-5">
                     <h2 className="text-lg font-semibold">Revision Comparison</h2>
                     <p className="mt-1 text-sm text-slate-600">Current submission compared with the immediately preceding revision.</p>
-                    <div className="mt-4 overflow-x-auto">
+                    <div className="table-scroll mt-4" tabIndex={0} role="region" aria-label="Subpoena revision comparison table">
                         <table className="w-full min-w-[720px] table-fixed text-left text-sm">
                             <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                                 <tr>

@@ -47,8 +47,8 @@ export default function Index({ users }: Props) {
                     </p>
                 ))}
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
+                <div className="table-scroll" tabIndex={0} role="region" aria-label="Users table">
+                    <table className="w-full min-w-[900px] text-left text-sm">
                         <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                             <tr>
                                 <th className="px-5 py-3 font-semibold">Username</th>

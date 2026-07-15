@@ -64,7 +64,7 @@ export default function Show({ resolution, currentRevision, previousRevision, de
 
                 <section className="rounded-md border border-slate-200 bg-white p-5">
                     <h2 className="text-lg font-semibold">Revision Comparison</h2>
-                    <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[720px] table-fixed text-left text-sm">
+                    <div className="table-scroll mt-4" tabIndex={0} role="region" aria-label="Resolution revision comparison table"><table className="w-full min-w-[720px] table-fixed text-left text-sm">
                         <thead className="border-b border-slate-200 bg-slate-50 text-slate-600"><tr><th className="w-44 px-4 py-3 font-semibold">Field</th><RevisionHeading label="Previous" revision={previousRevision} /><RevisionHeading label="Current" revision={currentRevision} /></tr></thead>
                         <tbody>{(['verdict', 'court', 'verdict_date'] as const).map((field) => <tr key={field} className="border-b border-slate-100"><th className="px-4 py-3 font-semibold capitalize text-slate-700">{field.replace('_', ' ')}</th><td className="px-4 py-3 text-slate-600">{previousRevision?.[field] || 'Not applicable'}</td><td className="px-4 py-3 text-slate-950">{currentRevision?.[field] || 'Not applicable'}</td></tr>)}</tbody>
                     </table></div>

@@ -17,6 +17,23 @@ async function logout(page: Page) {
     await expect(page).toHaveURL(/\/login$/);
 }
 
+async function expectChartRendered(page: Page, testId: string) {
+    const canvas = page.getByTestId(testId).locator('canvas');
+    await expect(canvas).toBeVisible();
+    await expect
+        .poll(() =>
+            canvas.evaluate((element) => {
+                const chart = element as HTMLCanvasElement;
+                const context = chart.getContext('2d');
+                if (!context || chart.width === 0 || chart.height === 0) return false;
+                return context
+                    .getImageData(0, 0, chart.width, chart.height)
+                    .data.some((value, index) => index % 4 === 3 && value > 0);
+            }),
+        )
+        .toBe(true);
+}
+
 test('each staff role receives only its approved navigation and route access', async ({ page }) => {
     await login(page, 'e2e_admin', '/dashboard');
     await expect(page.getByRole('link', { name: 'Dashboard' })).toBeVisible();
@@ -134,8 +151,52 @@ test('public lookup and administrator report preserve approved behavior', async 
     ).toBeVisible();
     await page.getByLabel('Case Status').selectOption('For Filing');
     await page.getByRole('button', { name: 'Generate' }).click();
-    await expect(page.getByText('Total Cases')).toBeVisible();
+    await expect.poll(() => new URL(page.url()).searchParams.get('verdict')).toBe('For Filing');
+    await expect(page.getByRole('heading', { name: 'Case Summary' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Crime Distribution' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Cases per Police Station' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Sex Distribution' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Age Group Distribution' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Verdict Distribution' })).toBeVisible();
+    for (const chart of [
+        'chart-crime-distribution',
+        'chart-cases-per-police-station',
+        'chart-sex-distribution',
+        'chart-age-group-distribution',
+        'chart-verdict-distribution',
+    ]) {
+        await expectChartRendered(page, chart);
+    }
+    const summary = page.getByRole('region', { name: 'Case Summary' });
+    await expect(summary.getByText('Total Cases')).toBeVisible();
+    await expect(summary.locator('dl').filter({ hasText: 'Cases Filed' })).toContainText('1');
+    await expect(summary.locator('dl').filter({ hasText: 'Cases Dismissed' })).toContainText('0');
+    const verdictTable = page.getByRole('region', { name: 'Verdict Distribution tabular data' });
+    await expect(
+        verdictTable.getByRole('row').filter({ hasText: 'For Filing' }).getByRole('cell').nth(1),
+    ).toHaveText('1');
     await expect(page.getByText('Qualified Theft', { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Generate Report PDF' })).toHaveAttribute(
+        'href',
+        /verdict=For(?:\+|%20)Filing/,
+    );
+    await expect(page.getByRole('link', { name: 'Export CSV' })).toHaveAttribute(
+        'href',
+        /verdict=For(?:\+|%20)Filing/,
+    );
+
+    await page.getByLabel('Case Status').selectOption('Dismissed');
+    await page.getByRole('button', { name: 'Generate' }).click();
+    await expect(page).toHaveURL(/verdict=Dismissed/);
+    await expect(summary.locator('dl').filter({ hasText: 'Total Cases' })).toContainText('0');
+    await expect(summary.locator('dl').filter({ hasText: 'Cases Filed' })).toContainText('0');
+    await expect(summary.locator('dl').filter({ hasText: 'Cases Dismissed' })).toContainText('0');
+    await expect(
+        verdictTable.getByRole('row').filter({ hasText: 'For Filing' }).getByRole('cell').nth(1),
+    ).toHaveText('0');
+    await expect(
+        verdictTable.getByRole('row').filter({ hasText: 'Dismissed' }).getByRole('cell').nth(1),
+    ).toHaveText('0');
 });
 
 test('critical public and authenticated pages have no automatic accessibility violations', async ({
@@ -164,8 +225,31 @@ test('critical public and authenticated pages have no automatic accessibility vi
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.goto('/admin/reports?verdict=For%20Filing');
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    await expectChartRendered(page, 'chart-crime-distribution');
     await page.goto('/admin/audit');
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    const auditTable = page.getByRole('region', { name: 'User Action Logs table' });
+    expect(await auditTable.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(
+        true,
+    );
+    expect(
+        await page.evaluate(() => {
+            window.scrollTo({ left: document.documentElement.scrollWidth });
+            return window.scrollX === 0;
+        }),
+    ).toBe(true);
+    await auditTable.evaluate((element) => {
+        element.scrollLeft = element.scrollWidth;
+    });
+    expect(
+        await page.evaluate(() => {
+            window.scrollTo({ left: document.documentElement.scrollWidth });
+            return window.scrollX === 0;
+        }),
+    ).toBe(true);
     await page.goto('/admin/offenses');
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     expect(

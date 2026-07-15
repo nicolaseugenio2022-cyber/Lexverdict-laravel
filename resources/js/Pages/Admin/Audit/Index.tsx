@@ -35,7 +35,7 @@ export default function Index({ events, filters }: Props) {
                     </label>
                     <button type="submit" className="min-h-11 self-end rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2">Search</button>
                 </form>
-                <div className="overflow-x-auto border border-slate-200 bg-white">
+                <div className="table-scroll border border-slate-200 bg-white" tabIndex={0} role="region" aria-label="User Action Logs table">
                     <table className="w-full min-w-[900px] text-left text-sm">
                         <thead className="border-b border-slate-300 bg-slate-100 text-xs uppercase text-slate-600"><tr><th className="p-3">Log ID</th><th className="p-3">User ID</th><th className="p-3">Full Name</th><th className="p-3">Role</th><th className="p-3">Action</th><th className="p-3">Timestamp</th><th className="p-3"><span className="sr-only">Details</span></th></tr></thead>
                         <tbody>

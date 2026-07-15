@@ -58,6 +58,21 @@ class ReportsAndAuditTest extends TestCase
                 ->has('report.age_distribution', 5)
                 ->where('report.age_distribution.0.label', '0-17')
                 ->where('report.age_distribution.4.label', '61+'));
+
+        $this->actingAs($admin)->get('/admin/reports?start_date=2026-07-01&end_date=2026-07-31&verdict=For+Filing&station=Station+A')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('report.total_cases', 1)
+                ->where('report.filed', 1)
+                ->where('report.dismissed', 0)
+                ->where('report.verdict_distribution.0.label', 'For Filing')
+                ->where('report.verdict_distribution.0.count', 1)
+                ->where('report.verdict_distribution.1.label', 'Dismissed')
+                ->where('report.verdict_distribution.1.count', 0)
+                ->where('report.station_distribution.0.label', 'Station A')
+                ->where('report.station_distribution.0.count', 1)
+                ->where('report.offense_distribution.0.label', 'Estafa')
+                ->where('report.offense_distribution.0.count', 1));
     }
 
     public function test_report_filters_use_or_for_case_types_and_same_party_for_demographics(): void

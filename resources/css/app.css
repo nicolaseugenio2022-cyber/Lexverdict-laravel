@@ -28,10 +28,13 @@
     }
 
     .table-scroll {
+        contain: inline-size paint;
+        max-width: 100%;
         min-width: 0;
         overflow-x: auto;
         overscroll-behavior-x: contain;
         scrollbar-gutter: stable;
+        -webkit-overflow-scrolling: touch;
     }
 
     .table-scroll:focus {

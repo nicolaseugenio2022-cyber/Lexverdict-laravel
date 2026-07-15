@@ -54,8 +54,8 @@ export default function Index({ assignments, prosecutors, secretaries }: Props) 
 
                 <div className="rounded-md border border-slate-200 bg-white p-5">
                     <h1 className="text-xl font-semibold">Assignments</h1>
-                    <div className="mt-4 overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                    <div className="table-scroll mt-4" tabIndex={0} role="region" aria-label="Assignments table">
+                        <table className="w-full min-w-[720px] text-left text-sm">
                             <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                                 <tr>
                                     <th className="px-4 py-3">Prosecutor</th>
