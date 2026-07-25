@@ -16,6 +16,7 @@ use App\Models\LegalCase;
 use App\Models\Offense;
 use App\Models\User;
 use App\Support\AuditRecorder;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -171,6 +172,11 @@ class PublicLookupAndDocumentsTest extends TestCase
         $this->actingAs($secretary)->get("/cases/{$case->id}/documents/{$document->id}")
             ->assertOk()->assertHeader('Content-Type', 'application/pdf')
             ->assertHeader('Cache-Control', 'max-age=0, no-store, private');
+        $case->update(['hearing_date_1' => null]);
+        $this->actingAs($secretary)->get("/cases/{$case->id}")->assertInertia(fn (Assert $page) => $page
+            ->where('can_generate_subpoena', false)
+            ->has('documents', 1));
+        $this->actingAs($secretary)->get("/cases/{$case->id}/documents/{$document->id}")->assertOk();
         $this->actingAs($prosecutor)->get("/cases/{$case->id}")->assertInertia(fn (Assert $page) => $page
             ->where('can_generate_subpoena', false)
             ->has('documents', 0));
@@ -226,7 +232,15 @@ class PublicLookupAndDocumentsTest extends TestCase
         [, , $secretary] = $this->pairedStaff('m6_snapshot');
         [$case, $pin] = $this->caseFor($secretary, 'Cabanatuan', 'Estafa');
         $document = app(RequestSubpoenaDocument::class)->request($case, $secretary);
+        $duplicateRequest = app(RequestSubpoenaDocument::class)->request($case, $secretary);
+        $this->assertSame($document->id, $duplicateRequest->id);
+        $this->assertDatabaseCount('generated_documents', 1);
+        Queue::assertPushed(GenerateSubpoenaPdf::class, 1);
         Queue::assertPushed(GenerateSubpoenaPdf::class, fn (GenerateSubpoenaPdf $job): bool => $job->documentId === $document->id);
+        $uniqueJob = new GenerateSubpoenaPdf($document->id);
+        $this->assertInstanceOf(ShouldBeUnique::class, $uniqueJob);
+        $this->assertSame($document->id, $uniqueJob->uniqueId());
+        $this->assertSame(300, $uniqueJob->uniqueFor);
         $this->assertSame(3, (new GenerateSubpoenaPdf($document->id))->tries);
 
         $ciphertext = DB::table('generated_documents')->where('id', $document->id)->value('render_payload');

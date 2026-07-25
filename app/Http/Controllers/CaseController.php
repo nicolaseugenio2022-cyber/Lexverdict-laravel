@@ -79,6 +79,7 @@ class CaseController extends Controller
             'partyRoles' => [PartyRole::Complainant->value, PartyRole::Respondent->value],
             'can_select_prosecutor' => $request->user()->hasRole(StaffRole::Superuser),
             'regions' => $this->addresses->regions(),
+            'police_stations' => $this->policeStationOptions(),
         ]);
     }
 
@@ -103,6 +104,7 @@ class CaseController extends Controller
         $case->load(['assignedProsecutor.staffProfile', 'createdBy.staffProfile', 'offenses', 'parties', 'subpoenaRevisions.submittedBy.staffProfile', 'subpoenaDecisions.decidedBy.staffProfile', 'resolution.createdBy.staffProfile', 'resolution.revisions.submittedBy.staffProfile', 'resolution.decisions.decidedBy.staffProfile', 'generatedDocuments.requestedBy.staffProfile']);
         $resolution = $case->resolution;
         $canGenerateDocument = $documentAccess->canGenerate($request->user(), $case);
+        $canAccessDocumentHistory = $documentAccess->canAccessHistory($request->user(), $case);
 
         return Inertia::render('Cases/Show', [
             'caseRecord' => $this->caseDetail($case),
@@ -113,7 +115,7 @@ class CaseController extends Controller
             'can_submit_resolution' => $resolution === null && $resolutionAccess->canSubmit($request->user(), $case),
             'can_revise_resolution' => $resolution !== null && $resolutionAccess->canRevise($request->user(), $resolution),
             'case_pin' => session('case_pin'),
-            'documents' => $canGenerateDocument ? $case->generatedDocuments->sortByDesc('version')->map(fn (GeneratedDocument $document): array => [
+            'documents' => $canAccessDocumentHistory ? $case->generatedDocuments->sortByDesc('version')->map(fn (GeneratedDocument $document): array => [
                 'id' => $document->id,
                 'version' => $document->version,
                 'template_version' => $document->template_version,
@@ -140,6 +142,7 @@ class CaseController extends Controller
             'partyRoles' => [PartyRole::Complainant->value, PartyRole::Respondent->value],
             'can_select_prosecutor' => false,
             'regions' => $this->addresses->regions(),
+            'police_stations' => [],
             'denial_comments' => $this->decisionHistory($case, true),
         ]);
     }
@@ -199,6 +202,42 @@ class CaseController extends Controller
                 'id' => $user->id,
                 'label' => $user->staffProfile?->displayName() ?: $user->username,
             ])->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function policeStationOptions(): array
+    {
+        return [
+            'PNP, Aliaga, Nueva Ecija',
+            'PNP, Bongabon, Nueva Ecija',
+            'PNP, Cabiao, Nueva Ecija',
+            'PNP, Carranglan, Nueva Ecija',
+            'PNP, Cuyapo, Nueva Ecija',
+            'PNP, Gabaldon, Nueva Ecija',
+            'PNP, General Mamerto Natividad, Nueva Ecija',
+            'PNP, General Tinio, Nueva Ecija',
+            'PNP, Guimba, Nueva Ecija',
+            'PNP, Jaen, Nueva Ecija',
+            'PNP, Laur, Nueva Ecija',
+            'PNP, Licab, Nueva Ecija',
+            'PNP, Llanera, Nueva Ecija',
+            'PNP, Lupao, Nueva Ecija',
+            'PNP, Nampicuan, Nueva Ecija',
+            'PNP, Pantabangan, Nueva Ecija',
+            'PNP, Peñaranda, Nueva Ecija',
+            'PNP, Quezon, Nueva Ecija',
+            'PNP, Rizal, Nueva Ecija',
+            'PNP, San Antonio, Nueva Ecija',
+            'PNP, San Isidro, Nueva Ecija',
+            'PNP, San Leonardo, Nueva Ecija',
+            'PNP, Santa Rosa, Nueva Ecija',
+            'PNP, Santa Domingo, Nueva Ecija',
+            'PNP, Talavera, Nueva Ecija',
+            'PNP, Talugtug, Nueva Ecija',
+            'PNP, Zaragoza, Nueva Ecija',
+        ];
     }
 
     /**

@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import type { CaseRecord } from './types';
 
@@ -48,6 +48,34 @@ type Props = {
 
 export default function Show({ caseRecord, timeline, can_revise, case_pin, decision_history, resolution, can_submit_resolution, can_revise_resolution, documents, can_generate_subpoena }: Props) {
     const [generating, setGenerating] = useState(false);
+    const hasPendingDocument = documents.some((document) => document.generated_at === null && document.failed_at === null);
+
+    useEffect(() => {
+        if (!hasPendingDocument) return;
+
+        let timeout: number | undefined;
+        let cancelled = false;
+
+        const poll = () => {
+            router.reload({
+                only: ['documents'],
+                onFinish: () => {
+                    if (!cancelled) {
+                        timeout = window.setTimeout(poll, 2000);
+                    }
+                },
+            });
+        };
+
+        timeout = window.setTimeout(poll, 2000);
+
+        return () => {
+            cancelled = true;
+            if (timeout !== undefined) {
+                window.clearTimeout(timeout);
+            }
+        };
+    }, [hasPendingDocument]);
 
     function generateSubpoena() {
         if (generating) return;
@@ -165,7 +193,7 @@ export default function Show({ caseRecord, timeline, can_revise, case_pin, decis
                                     </button>
                                 )}
                                 {documents.length === 0 ? <p className="text-slate-600">No generated Subpoena PDF.</p> : (
-                                    <ol className="space-y-3">
+                                    <ol className="space-y-3" aria-live="polite">
                                         {documents.map((document) => (
                                             <li key={document.id} className="rounded-md border border-slate-200 p-4">
                                                 <p className="font-semibold">Version {document.version}</p>

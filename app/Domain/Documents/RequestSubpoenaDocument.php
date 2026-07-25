@@ -32,6 +32,18 @@ class RequestSubpoenaDocument
                 throw new DocumentInvariantException('This Subpoena document cannot be generated.');
             }
 
+            $pendingDocument = GeneratedDocument::query()
+                ->where('case_id', $case->id)
+                ->where('document_type', 'Subpoena')
+                ->whereNull('generated_at')
+                ->whereNull('failed_at')
+                ->latest('requested_at')
+                ->first();
+
+            if ($pendingDocument !== null) {
+                return $pendingDocument;
+            }
+
             $case->load(['parties', 'offenses', 'assignedProsecutor.staffProfile']);
             $actor->load('staffProfile');
 

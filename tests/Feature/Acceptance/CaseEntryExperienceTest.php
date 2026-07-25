@@ -17,7 +17,7 @@ class CaseEntryExperienceTest extends TestCase
     use CreatesStaffPairs;
     use RefreshDatabase;
 
-    public function test_case_form_uses_only_active_catalog_crimes_and_official_regions(): void
+    public function test_case_form_uses_only_active_catalog_crimes_official_regions_and_legacy_police_stations(): void
     {
         [, , $secretary] = $this->pairedStaff('case_entry_form');
         $active = Offense::factory()->create(['name' => 'Active Crime', 'is_active' => true]);
@@ -29,6 +29,10 @@ class CaseEntryExperienceTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Cases/Form')
                 ->has('regions', 18)
+                ->has('police_stations', 27)
+                ->where('police_stations.0', 'PNP, Aliaga, Nueva Ecija')
+                ->where('police_stations.16', 'PNP, Peñaranda, Nueva Ecija')
+                ->where('police_stations.26', 'PNP, Zaragoza, Nueva Ecija')
                 ->has('offenses', 1)
                 ->where('offenses.0.id', $active->id)
                 ->where('offenses.0.name', 'Active Crime'));

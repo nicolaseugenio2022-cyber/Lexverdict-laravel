@@ -1,7 +1,10 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
 const password = 'E2E-only-password';
+const execFileAsync = promisify(execFile);
 
 async function login(page: Page, username: string, landing: string) {
     await page.goto('/login');
@@ -210,6 +213,10 @@ test('case entry supports keyboard crime search and cascading official addresses
     await expect(page.getByText('No matching Crime is available.')).toBeVisible();
     await crimeSearch.press('Escape');
 
+    const policeStation = page.getByLabel('Police Station');
+    await expect(policeStation).toHaveAttribute('list', 'legacy-police-stations');
+    await expect(page.locator('#legacy-police-stations option[value="PNP, Peñaranda, Nueva Ecija"]')).toBeAttached();
+
     const region = page.getByLabel('Region').first();
     const province = page.getByLabel('Province').first();
     const municipality = page.getByLabel('Municipality/City').first();
@@ -229,6 +236,45 @@ test('case entry supports keyboard crime search and cascading official addresses
     await expect(barangay).toHaveValue('');
 
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test('queued Subpoena document lifecycle refreshes once and stops polling when ready', async ({
+    page,
+}) => {
+    test.setTimeout(60_000);
+    await login(page, 'e2e_secretary', '/cases');
+    const pendingCase = page.getByRole('row').filter({ hasText: 'III-09-INV-26G-0002' });
+    await pendingCase.getByRole('button', { name: 'Generate PDF' }).click();
+    await expect(page).toHaveURL(/\/cases\/[0-9a-f-]+$/);
+    await expect(page.getByText('Generating', { exact: true })).toBeVisible();
+
+    await execFileAsync(
+        'php',
+        [
+            'artisan',
+            'queue:work',
+            'database',
+            '--queue=documents',
+            '--once',
+            '--stop-when-empty',
+            '--timeout=120',
+            '--env=testing',
+        ],
+        { cwd: process.cwd(), env: { ...process.env, APP_ENV: 'testing' } },
+    );
+
+    await expect(page.getByRole('link', { name: 'View PDF' })).toBeVisible({
+        timeout: 30_000,
+    });
+
+    let subsequentCaseReloads = 0;
+    page.on('request', (request) => {
+        if (request.method() === 'GET' && new URL(request.url()).pathname === new URL(page.url()).pathname) {
+            subsequentCaseReloads += 1;
+        }
+    });
+    await page.waitForTimeout(2500);
+    expect(subsequentCaseReloads).toBe(0);
 });
 
 test('public lookup and administrator report preserve approved behavior', async ({ page }) => {

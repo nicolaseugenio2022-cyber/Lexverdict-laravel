@@ -14,15 +14,20 @@ class DocumentAccess
 
     public function canGenerate(User $user, LegalCase $case): bool
     {
-        return $user->is_active
-            && ($user->hasRole(StaffRole::Superuser)
-                || ($user->hasRole(StaffRole::Secretary) && $this->cases->canView($user, $case)))
+        return $this->canAccessHistory($user, $case)
             && $case->hearing_date_1 !== null
             && $case->pin_document_secret !== null;
     }
 
+    public function canAccessHistory(User $user, LegalCase $case): bool
+    {
+        return $user->is_active
+            && ($user->hasRole(StaffRole::Superuser)
+                || ($user->hasRole(StaffRole::Secretary) && $this->cases->canView($user, $case)));
+    }
+
     public function canView(User $user, GeneratedDocument $document): bool
     {
-        return $document->case !== null && $this->canGenerate($user, $document->case);
+        return $document->case !== null && $this->canAccessHistory($user, $document->case);
     }
 }

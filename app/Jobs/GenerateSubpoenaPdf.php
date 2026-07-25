@@ -6,6 +6,7 @@ use App\Domain\Documents\SubpoenaPdfRenderer;
 use App\Models\GeneratedDocument;
 use App\Models\LegalCase;
 use App\Support\AuditRecorder;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
@@ -15,7 +16,7 @@ use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 
-class GenerateSubpoenaPdf implements ShouldQueue
+class GenerateSubpoenaPdf implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -24,6 +25,8 @@ class GenerateSubpoenaPdf implements ShouldQueue
     public int $timeout = 120;
 
     public bool $failOnTimeout = true;
+
+    public int $uniqueFor = 300;
 
     public function __construct(public readonly string $documentId)
     {
@@ -34,6 +37,11 @@ class GenerateSubpoenaPdf implements ShouldQueue
     public function middleware(): array
     {
         return [(new WithoutOverlapping('subpoena-document-'.$this->documentId))->dontRelease()->expireAfter(300)];
+    }
+
+    public function uniqueId(): string
+    {
+        return $this->documentId;
     }
 
     public function handle(SubpoenaPdfRenderer $renderer, AuditRecorder $audit): void

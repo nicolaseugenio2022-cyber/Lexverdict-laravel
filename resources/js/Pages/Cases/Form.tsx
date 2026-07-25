@@ -20,6 +20,7 @@ type Props = {
     partyRoles: Array<'Complainant' | 'Respondent'>;
     can_select_prosecutor: boolean;
     regions: AddressOption[];
+    police_stations: string[];
     denial_comments?: Array<{
         revision_number: number;
         comment: string;
@@ -56,6 +57,7 @@ export default function Form({
     partyRoles,
     can_select_prosecutor,
     regions,
+    police_stations,
     denial_comments = [],
 }: Props) {
     const { flash } = usePage<PageProps>().props;
@@ -211,9 +213,15 @@ export default function Form({
                         <Field label="Police Station" error={errors.police_station}>
                             <input
                                 className="input"
+                                list={police_stations.length > 0 ? 'legacy-police-stations' : undefined}
                                 value={data.police_station}
                                 onChange={(event) => setData('police_station', event.target.value)}
                             />
+                            {police_stations.length > 0 && (
+                                <datalist id="legacy-police-stations">
+                                    {police_stations.map((station) => <option key={station} value={station} />)}
+                                </datalist>
+                            )}
                         </Field>
                     </div>
                 </div>
