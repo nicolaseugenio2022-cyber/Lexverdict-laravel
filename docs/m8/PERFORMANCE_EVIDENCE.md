@@ -9,6 +9,6 @@
 - Eloquent query count: 4
 - Measured report query/aggregation time: 96.47 ms in the final full-suite run
 - Automated ceiling: 4 queries and 2,000 ms
-- PostgreSQL plan check: `resolutions_status_verdict_verdict_date_index` is selected with sequential scans disabled to prove index eligibility.
+- PostgreSQL plan check: `resolutions_status_verdict_verdict_date_index` exists with the required `(status, verdict, verdict_date)` columns, and the representative report predicate uses an index-backed plan with sequential scans disabled. The assertion does not depend on PostgreSQL choosing one exact eligible index.
 
 The synthetic volume exceeds the owner-identified legacy mock Resolution count. Production volume remains an operational input; rerun the same M8 profile at staging volume before go-live when that volume is known.

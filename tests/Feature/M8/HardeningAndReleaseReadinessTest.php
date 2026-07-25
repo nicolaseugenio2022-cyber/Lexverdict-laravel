@@ -118,6 +118,17 @@ class HardeningAndReleaseReadinessTest extends TestCase
         $this->assertLessThanOrEqual(4, $reportQueryCount);
         $this->assertLessThan(2000, $elapsedMilliseconds);
 
+        $indexDefinition = DB::table('pg_indexes')
+            ->where('schemaname', 'public')
+            ->where('tablename', 'resolutions')
+            ->where('indexname', 'resolutions_status_verdict_verdict_date_index')
+            ->value('indexdef');
+        $this->assertIsString($indexDefinition);
+        $this->assertStringContainsString(
+            '(status, verdict, verdict_date)',
+            str_replace('"', '', $indexDefinition),
+        );
+
         DB::statement('SET LOCAL enable_seqscan = off');
         $plan = json_encode(DB::select(<<<'SQL'
             EXPLAIN (FORMAT JSON)
@@ -126,7 +137,8 @@ class HardeningAndReleaseReadinessTest extends TestCase
               AND verdict IN ('For Filing', 'Dismissed')
               AND verdict_date BETWEEN '2026-07-01' AND '2026-07-31'
             SQL), JSON_THROW_ON_ERROR);
-        $this->assertStringContainsString('resolutions_status_verdict_verdict_date_index', $plan);
+        $this->assertStringContainsString('Index Scan', $plan);
+        $this->assertStringNotContainsString('Seq Scan', $plan);
 
         fwrite(STDOUT, sprintf("\nM8 report profile: 250 cases, %d queries, %.2f ms\n", $reportQueryCount, $elapsedMilliseconds));
     }
