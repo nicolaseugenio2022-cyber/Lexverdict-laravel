@@ -13,6 +13,10 @@ export default defineConfig({
     },
     webServer: {
         command: 'php artisan serve --env=testing --host=127.0.0.1 --port=8008',
+        env: {
+            ...process.env,
+            QUEUE_CONNECTION: 'database',
+        },
         url: 'http://127.0.0.1:8008/up',
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
