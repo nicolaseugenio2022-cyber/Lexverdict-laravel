@@ -11,6 +11,8 @@ import {
 import type { ChartOptions } from 'chart.js';
 import { Head } from '@inertiajs/react';
 import { Bar, Doughnut, Pie, PolarArea } from 'react-chartjs-2';
+import EmptyState from '../../../Components/EmptyState';
+import PageHeader from '../../../Components/PageHeader';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 
 ChartJS.register(
@@ -75,7 +77,10 @@ const sharedRadialOptions = {
     maintainAspectRatio: false,
     animation: false,
     plugins: {
-        legend: { position: 'bottom' as const, labels: { boxWidth: 12, padding: 14 } },
+        legend: {
+            position: 'bottom' as const,
+            labels: { boxWidth: 12, padding: 16, color: '#334155', usePointStyle: true },
+        },
         tooltip: { enabled: true },
     },
 };
@@ -114,20 +119,17 @@ function DistributionChart({
     };
 
     return (
-        <section
-            className="min-w-0 rounded-md border border-slate-200 bg-white p-4"
-            aria-labelledby={`${slug}-title`}
-        >
+        <section className="surface min-w-0 p-4 sm:p-5" aria-labelledby={`${slug}-title`}>
             <h2 id={`${slug}-title`} className="text-base font-semibold text-slate-950">
                 {title}
             </h2>
             {data.length === 0 ? (
-                <p className="flex h-72 items-center justify-center text-sm text-slate-600">
-                    No data
-                </p>
+                <div className="mt-3 border-t border-slate-200">
+                    <EmptyState title="No data" />
+                </div>
             ) : (
                 <>
-                    <div className="mt-3 h-72 min-w-0" data-testid={`chart-${slug}`}>
+                    <div className="mt-4 h-64 min-w-0 sm:h-72" data-testid={`chart-${slug}`}>
                         {kind === 'bar' && (
                             <Bar data={dataset} options={barOptions} aria-hidden="true" />
                         )}
@@ -149,25 +151,28 @@ function DistributionChart({
                         )}
                     </div>
                     <div
-                        className="table-scroll mt-4"
-                        tabIndex={0}
+                        className="mt-5 border-t border-slate-200 pt-2"
                         role="region"
                         aria-label={`${title} tabular data`}
                     >
-                        <table className="w-full min-w-[360px] text-left text-sm">
+                        <table className="w-full table-fixed text-left text-sm">
                             <thead className="border-b border-slate-300 text-xs uppercase text-slate-600">
                                 <tr>
-                                    <th className="py-2 pr-3">Category</th>
-                                    <th className="py-2 pr-3">Count</th>
-                                    <th className="py-2">Percent</th>
+                                    <th className="w-1/2 py-2 pr-2">Category</th>
+                                    <th className="w-1/4 py-2 pr-2 text-right">Count</th>
+                                    <th className="w-1/4 py-2 text-right">Percent</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {data.map((item) => (
                                     <tr key={item.label} className="border-b border-slate-100">
-                                        <td className="py-2 pr-3 font-medium">{item.label}</td>
-                                        <td className="py-2 pr-3 tabular-nums">{item.count}</td>
-                                        <td className="py-2 tabular-nums">
+                                        <td className="break-words py-2 pr-2 font-medium">
+                                            {item.label}
+                                        </td>
+                                        <td className="py-2 pr-2 text-right tabular-nums">
+                                            {item.count}
+                                        </td>
+                                        <td className="py-2 text-right tabular-nums">
                                             {item.percent.toFixed(1)}%
                                         </td>
                                     </tr>
@@ -188,33 +193,34 @@ export default function Index({ report, filters, offenses, stations, export_quer
         <AuthenticatedLayout>
             <Head title="Case Report" />
             <div className="min-w-0 space-y-6">
-                <header className="flex flex-col gap-3 border-b border-slate-300 pb-5 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p className="text-sm font-semibold text-blue-900">Administrator</p>
-                        <h1 className="mt-1 text-2xl font-semibold">Case Report</h1>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <a
-                            href={`/admin/reports/pdf${exportSuffix}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                        >
-                            Generate Report PDF
-                        </a>
-                        <a
-                            href={`/admin/reports/csv${exportSuffix}`}
-                            className="inline-flex min-h-11 items-center rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2"
-                        >
-                            Export CSV
-                        </a>
-                    </div>
-                </header>
+                <PageHeader
+                    eyebrow="Administrator"
+                    title="Case Report"
+                    description="Generate the approved report dashboard using the available case filters."
+                    actions={
+                        <>
+                            <a
+                                href={`/admin/reports/pdf${exportSuffix}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                            >
+                                Generate Report PDF
+                            </a>
+                            <a
+                                href={`/admin/reports/csv${exportSuffix}`}
+                                className="inline-flex min-h-11 items-center rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2"
+                            >
+                                Export CSV
+                            </a>
+                        </>
+                    }
+                />
 
                 <form
                     method="get"
                     action="/admin/reports"
-                    className="grid gap-4 border-b border-slate-200 pb-6 sm:grid-cols-2 lg:grid-cols-4"
+                    className="surface grid gap-4 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4"
                 >
                     <label className="text-sm font-medium">
                         Date From
@@ -299,7 +305,7 @@ export default function Index({ report, filters, offenses, stations, export_quer
                             ))}
                         </select>
                     </label>
-                    <div className="flex flex-wrap items-end gap-2 lg:col-span-4">
+                    <div className="flex flex-wrap items-end gap-2 border-t border-slate-200 pt-4 sm:col-span-2 lg:col-span-4">
                         <button
                             type="submit"
                             className="min-h-11 rounded-md bg-blue-900 px-5 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2"
@@ -316,13 +322,16 @@ export default function Index({ report, filters, offenses, stations, export_quer
                 </form>
 
                 {!report ? (
-                    <p className="py-8 text-sm text-slate-600">
-                        Select report filters and generate the Case Report.
-                    </p>
+                    <div className="surface">
+                        <EmptyState
+                            title="Select report filters and generate the Case Report."
+                            description="The report dashboard and summary will appear here."
+                        />
+                    </div>
                 ) : (
                     <>
                         <section aria-labelledby="case-summary-title">
-                            <h2 id="case-summary-title" className="mb-3 text-base font-semibold">
+                            <h2 id="case-summary-title" className="mb-3 text-lg font-semibold">
                                 Case Summary
                             </h2>
                             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -334,10 +343,12 @@ export default function Index({ report, filters, offenses, stations, export_quer
                                 ].map(([label, value]) => (
                                     <dl
                                         key={label}
-                                        className="rounded-md border border-slate-200 bg-white p-4"
+                                        className="surface border-t-4 border-t-blue-900 p-4"
                                     >
-                                        <dt className="text-sm text-slate-600">{label}</dt>
-                                        <dd className="mt-1 text-xl font-semibold tabular-nums">
+                                        <dt className="text-sm font-medium text-slate-600">
+                                            {label}
+                                        </dt>
+                                        <dd className="mt-2 text-2xl font-semibold tabular-nums">
                                             {value}
                                         </dd>
                                     </dl>

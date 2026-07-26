@@ -1,10 +1,13 @@
 import { Head, Link, router } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import EmptyState from '../../Components/EmptyState';
+import PageHeader from '../../Components/PageHeader';
+import Pagination, { type PaginationLink } from '../../Components/Pagination';
+import StatusBadge from '../../Components/StatusBadge';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import type { CaseRecord } from './types';
 
-type PaginationLink = { url: string | null; label: string; active: boolean };
 type ListOption = { value: string; label: string };
 
 type PaginatedCases = {
@@ -60,28 +63,28 @@ export default function Index({
     return (
         <AuthenticatedLayout>
             <Head title="Cases" />
-            <section className="space-y-4">
-                <div className="rounded-md border border-slate-200 bg-white p-5">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h1 className="text-xl font-semibold">Cases</h1>
-                            <p className="text-sm text-slate-600">
-                                {is_process_server
-                                    ? 'Read-only case list.'
-                                    : 'Case list for your assigned work.'}
-                            </p>
-                        </div>
-                        {can_create_case && (
+            <section className="space-y-6">
+                <PageHeader
+                    title="Cases"
+                    description={
+                        is_process_server
+                            ? 'Read-only case list.'
+                            : 'Case list for your assigned work.'
+                    }
+                    actions={
+                        can_create_case ? (
                             <Link
                                 href="/cases/create"
                                 className="inline-flex min-h-11 items-center justify-center rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900"
                             >
                                 Create Case
                             </Link>
-                        )}
-                    </div>
+                        ) : undefined
+                    }
+                />
 
-                    <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                <div className="surface p-4 sm:p-5">
+                    <div className="grid gap-4 lg:grid-cols-2">
                         <div className="grid gap-3 sm:grid-cols-2">
                             <label className="text-sm font-medium text-slate-700">
                                 Sort by
@@ -151,9 +154,9 @@ export default function Index({
                     </div>
                 </div>
 
-                <div className="min-w-0 rounded-md border border-slate-200 bg-white">
+                <div className="surface min-w-0 overflow-hidden">
                     <div
-                        className="table-scroll"
+                        className="table-scroll hidden lg:block"
                         tabIndex={0}
                         role="region"
                         aria-label="Cases table"
@@ -186,7 +189,7 @@ export default function Index({
                                 {cases.data.map((caseRecord) => (
                                     <tr
                                         key={caseRecord.id}
-                                        className="border-b border-slate-100 align-top"
+                                        className="data-row border-b border-slate-100 align-top"
                                     >
                                         <Cell className="font-medium text-slate-950">
                                             {caseRecord.docket_number}
@@ -198,20 +201,13 @@ export default function Index({
                                         <Cell>{formatDate(caseRecord.date)}</Cell>
                                         <Cell>{value(caseRecord.assigned_prosecutor_name)}</Cell>
                                         <Cell>
-                                            <span
-                                                className={
-                                                    caseRecord.resolution_verdict === 'For Filing'
-                                                        ? 'font-semibold text-emerald-700'
-                                                        : caseRecord.resolution_verdict ===
-                                                            'Dismissed'
-                                                          ? 'font-semibold text-red-700'
-                                                          : undefined
+                                            <StatusBadge
+                                                value={
+                                                    caseRecord.resolution_verdict === 'Pending'
+                                                        ? 'PENDING'
+                                                        : caseRecord.resolution_verdict
                                                 }
-                                            >
-                                                {caseRecord.resolution_verdict === 'Pending'
-                                                    ? 'PENDING'
-                                                    : caseRecord.resolution_verdict}
-                                            </span>
+                                            />
                                         </Cell>
                                         <Cell>{value(caseRecord.court)}</Cell>
                                         <Cell>{formatDate(caseRecord.verdict_date)}</Cell>
@@ -235,29 +231,81 @@ export default function Index({
                             </tbody>
                         </table>
                     </div>
-                    <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
-                        <span>
-                            Showing {cases.from ?? 0} to {cases.to ?? 0} of {cases.total}
-                        </span>
-                        <nav aria-label="Cases pagination" className="flex flex-wrap gap-2">
-                            {cases.links.map((link, index) =>
-                                link.url ? (
-                                    <Link
-                                        key={`${link.label}-${index}`}
-                                        href={link.url}
-                                        className={`min-h-10 rounded-md border px-3 py-2 ${link.active ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 text-slate-700'}`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ) : (
-                                    <span
-                                        key={`${link.label}-${index}`}
-                                        className="min-h-10 rounded-md border border-slate-200 px-3 py-2 text-slate-600"
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ),
-                            )}
-                        </nav>
+                    <div className="lg:hidden" role="region" aria-label="Cases list">
+                        {cases.data.length === 0 ? (
+                            <EmptyState title="No cases found." />
+                        ) : (
+                            <ol>
+                                {cases.data.map((caseRecord) => (
+                                    <li key={caseRecord.id} className="mobile-data-card">
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="font-semibold text-slate-950">
+                                                    {caseRecord.docket_number}
+                                                </p>
+                                                <p className="mt-1 break-words text-sm text-slate-700">
+                                                    {value(caseRecord.offenses.join(', '))}
+                                                </p>
+                                            </div>
+                                            <StatusBadge
+                                                value={
+                                                    caseRecord.resolution_verdict === 'Pending'
+                                                        ? 'PENDING'
+                                                        : caseRecord.resolution_verdict
+                                                }
+                                            />
+                                        </div>
+                                        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                                            <MobileDetail
+                                                label="Complainant"
+                                                value={value(caseRecord.complainants.join(', '))}
+                                            />
+                                            <MobileDetail
+                                                label="Respondent"
+                                                value={value(caseRecord.respondents.join(', '))}
+                                            />
+                                            <MobileDetail
+                                                label="Police Station"
+                                                value={value(caseRecord.police_station)}
+                                            />
+                                            <MobileDetail
+                                                label="Date"
+                                                value={formatDate(caseRecord.date)}
+                                            />
+                                            <MobileDetail
+                                                label={
+                                                    is_process_server
+                                                        ? 'Assigned Prosecutor'
+                                                        : 'Prosecutor'
+                                                }
+                                                value={value(caseRecord.assigned_prosecutor_name)}
+                                            />
+                                            <MobileDetail
+                                                label="Court"
+                                                value={value(caseRecord.court)}
+                                            />
+                                            <MobileDetail
+                                                label={dateColumnLabel}
+                                                value={formatDate(caseRecord.verdict_date)}
+                                            />
+                                        </dl>
+                                        {commandColumn && (
+                                            <div className="mt-4 border-t border-slate-200 pt-3">
+                                                <CaseCommands caseRecord={caseRecord} />
+                                            </div>
+                                        )}
+                                    </li>
+                                ))}
+                            </ol>
+                        )}
                     </div>
+                    <Pagination
+                        links={cases.links}
+                        from={cases.from}
+                        to={cases.to}
+                        total={cases.total}
+                        ariaLabel="Cases pagination"
+                    />
                 </div>
             </section>
         </AuthenticatedLayout>
@@ -305,6 +353,15 @@ function Header({ children }: { children: React.ReactNode }) {
 
 function Cell({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return <td className={`px-4 py-3 ${className}`}>{children}</td>;
+}
+
+function MobileDetail({ label, value }: { label: string; value: string }) {
+    return (
+        <div>
+            <dt className="text-xs font-medium text-slate-500">{label}</dt>
+            <dd className="mt-0.5 break-words text-slate-800">{value}</dd>
+        </div>
+    );
 }
 
 function value(input: string | null) {

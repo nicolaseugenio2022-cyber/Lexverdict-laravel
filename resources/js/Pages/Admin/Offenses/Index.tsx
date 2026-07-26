@@ -1,6 +1,7 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import Pagination, { type PaginationLink } from '../../../Components/Pagination';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 
 type Offense = {
@@ -10,8 +11,6 @@ type Offense = {
     is_active: boolean;
     cases_count: number;
 };
-
-type PaginationLink = { url: string | null; label: string; active: boolean };
 
 type Props = {
     offenses: {
@@ -258,30 +257,13 @@ export default function Index({ offenses, filters }: Props) {
                             </table>
                         </div>
 
-                        <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
-                            <span>
-                                Showing {offenses.from ?? 0} to {offenses.to ?? 0} of{' '}
-                                {offenses.total}
-                            </span>
-                            <div className="flex flex-wrap gap-2">
-                                {offenses.links.map((link, index) =>
-                                    link.url ? (
-                                        <Link
-                                            key={`${link.label}-${index}`}
-                                            href={link.url}
-                                            className={`min-h-10 rounded-md border px-3 py-2 ${link.active ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
-                                    ) : (
-                                        <span
-                                            key={`${link.label}-${index}`}
-                                            className="min-h-10 rounded-md border border-slate-200 px-3 py-2 text-slate-600"
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
-                                    ),
-                                )}
-                            </div>
-                        </div>
+                        <Pagination
+                            links={offenses.links}
+                            from={offenses.from}
+                            to={offenses.to}
+                            total={offenses.total}
+                            ariaLabel="Crime catalog pagination"
+                        />
                     </div>
                 </div>
             </section>

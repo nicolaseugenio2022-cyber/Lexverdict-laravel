@@ -1,53 +1,156 @@
 import { Head, Link } from '@inertiajs/react';
+import { formatAuditAction } from '../../../Components/audit';
+import EmptyState from '../../../Components/EmptyState';
+import PageHeader from '../../../Components/PageHeader';
+import Pagination, { type PaginationLink } from '../../../Components/Pagination';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 
-type Event = { log_id: string; user_id: string | null; full_name: string | null; role: string | null; action: string; timestamp: string | null };
-type PageLink = { url: string | null; label: string; active: boolean };
+type Event = {
+    log_id: string;
+    user_id: string | null;
+    full_name: string | null;
+    role: string | null;
+    action: string;
+    timestamp: string | null;
+};
 type Props = {
-    events: { data: Event[]; links: PageLink[]; current_page: number; last_page: number };
+    events: {
+        data: Event[];
+        links: PaginationLink[];
+        current_page: number;
+        last_page: number;
+    };
     filters: { search: string; filter: string; sort: string; order: string };
 };
 
 export default function Index({ events, filters }: Props) {
-    const pageLabel = (label: string) => label.replace('&laquo;', '').replace('&raquo;', '').trim();
-
     return (
         <AuthenticatedLayout>
             <Head title="User Action Logs" />
             <div className="space-y-6">
-                <header className="border-b border-slate-300 pb-5"><p className="text-sm font-semibold text-blue-900">Administrator</p><h1 className="mt-1 text-2xl font-semibold">User Action Logs</h1></header>
-                <form method="get" action="/admin/audit" className="grid gap-4 border-b border-slate-200 pb-5 md:grid-cols-[1fr_180px_160px_140px_auto]">
-                    <label className="text-sm font-medium">Search
-                        <input name="search" defaultValue={filters.search} maxLength={200} className="mt-1 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900" />
+                <PageHeader
+                    eyebrow="Administrator"
+                    title="User Action Logs"
+                    description="Review recorded actions by actor, role, and time. Technical event identifiers remain available in each event detail."
+                />
+
+                <form
+                    method="get"
+                    action="/admin/audit"
+                    className="surface grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_180px_160px_140px_auto]"
+                >
+                    <label className="text-sm font-medium text-slate-700">
+                        Search
+                        <input
+                            name="search"
+                            defaultValue={filters.search}
+                            maxLength={200}
+                            className="input mt-2"
+                        />
                     </label>
-                    <label className="text-sm font-medium">Filter
-                        <select name="filter" defaultValue={filters.filter} className="mt-1 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900">
-                            <option value="">All Fields</option><option value="user_id">User ID</option><option value="full_name">Full Name</option><option value="role">Role</option><option value="action">Action</option><option value="timestamp">Date</option>
+                    <label className="text-sm font-medium text-slate-700">
+                        Filter
+                        <select name="filter" defaultValue={filters.filter} className="input mt-2">
+                            <option value="">All Fields</option>
+                            <option value="user_id">User ID</option>
+                            <option value="full_name">Full Name</option>
+                            <option value="role">Role</option>
+                            <option value="action">Action</option>
+                            <option value="timestamp">Date</option>
                         </select>
                     </label>
-                    <label className="text-sm font-medium">Sort by
-                        <select name="sort" defaultValue={filters.sort} className="mt-1 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900">
-                            <option value="log_id">Log ID</option><option value="user_id">User ID</option><option value="full_name">Full Name</option><option value="role">Role</option><option value="action">Action</option><option value="timestamp">Date</option>
+                    <label className="text-sm font-medium text-slate-700">
+                        Sort by
+                        <select name="sort" defaultValue={filters.sort} className="input mt-2">
+                            <option value="log_id">Log ID</option>
+                            <option value="user_id">User ID</option>
+                            <option value="full_name">Full Name</option>
+                            <option value="role">Role</option>
+                            <option value="action">Action</option>
+                            <option value="timestamp">Date</option>
                         </select>
                     </label>
-                    <label className="text-sm font-medium">Order
-                        <select name="order" defaultValue={filters.order} className="mt-1 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900"><option value="desc">Descending</option><option value="asc">Ascending</option></select>
+                    <label className="text-sm font-medium text-slate-700">
+                        Order
+                        <select name="order" defaultValue={filters.order} className="input mt-2">
+                            <option value="desc">Descending</option>
+                            <option value="asc">Ascending</option>
+                        </select>
                     </label>
-                    <button type="submit" className="min-h-11 self-end rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2">Search</button>
+                    <button
+                        type="submit"
+                        className="min-h-11 self-end rounded-md bg-blue-900 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 md:col-span-2 xl:col-span-1"
+                    >
+                        Search
+                    </button>
                 </form>
-                <div className="table-scroll border border-slate-200 bg-white" tabIndex={0} role="region" aria-label="User Action Logs table">
-                    <table className="w-full min-w-[900px] text-left text-sm">
-                        <thead className="border-b border-slate-300 bg-slate-100 text-xs uppercase text-slate-600"><tr><th className="p-3">Log ID</th><th className="p-3">User ID</th><th className="p-3">Full Name</th><th className="p-3">Role</th><th className="p-3">Action</th><th className="p-3">Timestamp</th><th className="p-3"><span className="sr-only">Details</span></th></tr></thead>
-                        <tbody>
-                            {events.data.map((event) => <tr key={event.log_id} className="border-b border-slate-100"><td className="p-3 font-mono text-xs">{event.log_id}</td><td className="p-3 font-mono text-xs">{event.user_id ?? 'System'}</td><td className="p-3">{event.full_name ?? 'System'}</td><td className="p-3">{event.role ?? 'System'}</td><td className="p-3 font-medium">{event.action}</td><td className="p-3 tabular-nums">{event.timestamp}</td><td className="p-3"><Link href={`/admin/audit/${event.log_id}`} className="font-semibold text-blue-900 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-900">View</Link></td></tr>)}
-                            {events.data.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-slate-600">No audit events found.</td></tr>}
-                        </tbody>
-                    </table>
-                </div>
-                <nav aria-label="Audit pagination" className="flex flex-wrap items-center gap-2">
-                    {events.links.map((link) => link.url ? <Link key={link.label} href={link.url} preserveScroll className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border px-3 text-sm ${link.active ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}`}>{pageLabel(link.label)}</Link> : <span key={link.label} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-slate-200 px-3 text-sm text-slate-600">{pageLabel(link.label)}</span>)}
-                    <span className="ml-2 text-sm text-slate-600">Page {events.current_page} of {events.last_page}</span>
-                </nav>
+
+                <section
+                    className="surface overflow-hidden"
+                    aria-labelledby="audit-history-heading"
+                >
+                    <div className="border-b border-slate-200 px-4 py-3 sm:px-5">
+                        <h2 id="audit-history-heading" className="font-semibold text-slate-900">
+                            Audit History
+                        </h2>
+                    </div>
+                    {events.data.length === 0 ? (
+                        <EmptyState
+                            title="No audit events found"
+                            description="Adjust the current search or filter to review other recorded actions."
+                        />
+                    ) : (
+                        <ol className="divide-y divide-slate-200" aria-label="Audit events">
+                            {events.data.map((event) => (
+                                <li key={event.log_id}>
+                                    <article className="data-row grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1fr)_minmax(180px,260px)_auto] lg:items-center">
+                                        <div className="min-w-0">
+                                            <p className="break-words font-semibold text-slate-950">
+                                                {formatAuditAction(event.action)}
+                                            </p>
+                                            <p className="mt-1 break-all font-mono text-xs text-slate-500">
+                                                {event.action}
+                                            </p>
+                                            <p className="mt-1 text-sm text-slate-600">
+                                                {event.timestamp ?? 'Timestamp unavailable'}
+                                            </p>
+                                        </div>
+                                        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm lg:block">
+                                            <div className="min-w-0">
+                                                <dt className="text-xs font-medium text-slate-500">
+                                                    Actor
+                                                </dt>
+                                                <dd className="truncate font-medium text-slate-800">
+                                                    {event.full_name ?? 'System'}
+                                                </dd>
+                                            </div>
+                                            <div className="min-w-0 lg:mt-2">
+                                                <dt className="text-xs font-medium text-slate-500">
+                                                    Role
+                                                </dt>
+                                                <dd className="truncate text-slate-700">
+                                                    {event.role ?? 'System'}
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                        <Link
+                                            href={`/admin/audit/${event.log_id}`}
+                                            className="action-link justify-center border border-slate-300 px-3 hover:bg-slate-50"
+                                        >
+                                            View details
+                                        </Link>
+                                    </article>
+                                </li>
+                            ))}
+                        </ol>
+                    )}
+                    <Pagination
+                        links={events.links}
+                        currentPage={events.current_page}
+                        lastPage={events.last_page}
+                        ariaLabel="Audit pagination"
+                    />
+                </section>
             </div>
         </AuthenticatedLayout>
     );

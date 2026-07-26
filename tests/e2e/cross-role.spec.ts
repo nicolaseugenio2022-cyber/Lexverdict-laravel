@@ -95,7 +95,9 @@ test('each staff role receives only its approved navigation and route access', a
     await expectLegacyCaseList(page);
     await expect(page.getByRole('columnheader', { name: 'Date Filed', exact: true })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Command', exact: true })).toBeVisible();
-    await expect(page.getByText('Resolved', { exact: true })).toBeVisible();
+    await expect(
+        page.getByRole('region', { name: 'Cases table' }).getByText('Resolved', { exact: true }),
+    ).toBeVisible();
     await page.getByRole('link', { name: 'Manage Crimes' }).click();
     await expect(page).toHaveURL(/\/admin\/offenses$/);
     await expect(page.getByRole('link', { name: 'Manage Crimes' })).toHaveAttribute(
@@ -128,8 +130,9 @@ test('each staff role receives only its approved navigation and route access', a
         page.getByRole('columnheader', { name: 'Verdict Date', exact: true }),
     ).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Command', exact: true })).toBeVisible();
-    await expect(page.getByText('Due for Hearing', { exact: true })).toBeVisible();
-    await expect(page.getByText('Resolved', { exact: true })).toBeVisible();
+    const prosecutorCasesTable = page.getByRole('region', { name: 'Cases table' });
+    await expect(prosecutorCasesTable.getByText('Due for Hearing', { exact: true })).toBeVisible();
+    await expect(prosecutorCasesTable.getByText('Resolved', { exact: true })).toBeVisible();
     await logout(page);
 
     await login(page, 'e2e_secretary', '/cases');
@@ -215,7 +218,9 @@ test('case entry supports keyboard crime search and cascading official addresses
 
     const policeStation = page.getByLabel('Police Station');
     await expect(policeStation).toHaveAttribute('list', 'legacy-police-stations');
-    await expect(page.locator('#legacy-police-stations option[value="PNP, Peñaranda, Nueva Ecija"]')).toBeAttached();
+    await expect(
+        page.locator('#legacy-police-stations option[value="PNP, Peñaranda, Nueva Ecija"]'),
+    ).toBeAttached();
 
     const region = page.getByLabel('Region').first();
     const province = page.getByLabel('Province').first();
@@ -269,7 +274,10 @@ test('queued Subpoena document lifecycle refreshes once and stops polling when r
 
     let subsequentCaseReloads = 0;
     page.on('request', (request) => {
-        if (request.method() === 'GET' && new URL(request.url()).pathname === new URL(page.url()).pathname) {
+        if (
+            request.method() === 'GET' &&
+            new URL(request.url()).pathname === new URL(page.url()).pathname
+        ) {
             subsequentCaseReloads += 1;
         }
     });
@@ -352,15 +360,37 @@ test('critical public and authenticated pages have no automatic accessibility vi
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
     await login(page, 'e2e_secretary', '/cases');
+    const navigationToggle = page.getByRole('button', { name: /Navigation/ });
+    await expect(navigationToggle).toHaveAttribute('aria-expanded', 'false');
+    await navigationToggle.focus();
+    await navigationToggle.press('Enter');
+    await expect(navigationToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByRole('link', { name: 'Cases', exact: true })).toBeVisible();
+    await navigationToggle.press('Enter');
+    await expect(page.getByRole('region', { name: 'Cases list' })).toBeVisible();
+    expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
     await page.goto('/secretary/verifying-cases');
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
-    const verificationTable = page.getByRole('region', { name: 'Subpoena verification table' });
+    await expect(page.getByRole('region', { name: 'Subpoena verification list' })).toBeVisible();
+    await logout(page);
+
+    await login(page, 'e2e_prosecutor', '/subpoena-reviews');
+    await expect(page.getByRole('region', { name: 'Subpoena Review list' })).toBeVisible();
+    await page.getByLabel('Sort by').selectOption('docket_number');
+    await expect.poll(() => new URL(page.url()).searchParams.get('sort')).toBe('docket_number');
+    await page.getByRole('link', { name: 'Review', exact: true }).first().click();
+    await expect(page.getByRole('heading', { name: 'Revision Comparison' })).toBeVisible();
+    await expect(page.getByLabel('Subpoena revision comparison', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Revision submission details')).toContainText('Submitted by');
     expect(
-        await verificationTable.evaluate((element) => element.scrollWidth > element.clientWidth),
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await logout(page);
 
     await login(page, 'e2e_admin', '/dashboard');
@@ -373,9 +403,10 @@ test('critical public and authenticated pages have no automatic accessibility vi
     await expectChartRendered(page, 'chart-crime-distribution');
     await page.goto('/admin/audit');
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-    const auditTable = page.getByRole('region', { name: 'User Action Logs table' });
-    expect(await auditTable.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(
-        true,
+    await expect(page.getByRole('region', { name: 'Audit History' })).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Audit events' })).toBeVisible();
+    expect(await page.locator('main').innerText()).not.toMatch(
+        /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i,
     );
     expect(
         await page.evaluate(() => {
@@ -383,9 +414,18 @@ test('critical public and authenticated pages have no automatic accessibility vi
             return window.scrollX === 0;
         }),
     ).toBe(true);
-    await auditTable.evaluate((element) => {
-        element.scrollLeft = element.scrollWidth;
-    });
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await page.getByRole('link', { name: 'Next' }).click();
+    await expect.poll(() => new URL(page.url()).searchParams.get('page')).toBe('2');
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(100);
+    await page.goto('/admin/audit');
+    await page.getByLabel('Search', { exact: true }).fill('auth.login');
+    await page.getByLabel('Filter').selectOption('action');
+    await page.getByRole('button', { name: 'Search' }).click();
+    await expect(page.getByText('auth.login', { exact: true }).first()).toBeVisible();
+    await page.getByRole('link', { name: 'View details' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Event Summary' })).toBeVisible();
+    await expect(page.getByText('Technical identifiers')).toBeVisible();
     expect(
         await page.evaluate(() => {
             window.scrollTo({ left: document.documentElement.scrollWidth });

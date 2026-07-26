@@ -1,9 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import EmptyState from '../../../Components/EmptyState';
+import PageHeader from '../../../Components/PageHeader';
+import Pagination, { type PaginationLink } from '../../../Components/Pagination';
+import StatusBadge from '../../../Components/StatusBadge';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
-
-type PaginationLink = { url: string | null; label: string; active: boolean };
 
 type WorkflowItem = {
     case_id: string;
@@ -60,19 +62,15 @@ export default function Index({ tab, filters, statuses, items }: Props) {
     return (
         <AuthenticatedLayout>
             <Head title="Verifying Cases" />
-            <section aria-labelledby="verifying-cases-title" className="min-w-0 space-y-4">
-                <div>
-                    <h1 id="verifying-cases-title" className="text-xl font-semibold">
-                        Verifying Cases
-                    </h1>
-                    <p className="mt-1 text-sm text-slate-600">
-                        Subpoena and Resolution workflow for the assigned Prosecutor.
-                    </p>
-                </div>
+            <section className="min-w-0 space-y-6">
+                <PageHeader
+                    title="Verifying Cases"
+                    description="Subpoena and Resolution workflow for the assigned Prosecutor."
+                />
 
                 <nav
                     aria-label="Verification sections"
-                    className="inline-flex max-w-full overflow-x-auto rounded-md border border-slate-300 bg-white p-1"
+                    className="surface inline-grid grid-cols-2 p-1"
                 >
                     <WorkflowTab
                         active={tab === 'subpoenas'}
@@ -90,7 +88,7 @@ export default function Index({ tab, filters, statuses, items }: Props) {
 
                 <div
                     aria-label={tab === 'subpoenas' ? 'Subpoenas' : 'Resolutions'}
-                    className="min-w-0 rounded-md border border-slate-200 bg-white"
+                    className="surface min-w-0 overflow-hidden"
                 >
                     <form
                         onSubmit={submit}
@@ -153,7 +151,7 @@ export default function Index({ tab, filters, statuses, items }: Props) {
                     </form>
 
                     <div
-                        className="table-scroll"
+                        className="table-scroll hidden xl:block"
                         tabIndex={0}
                         role="region"
                         aria-label={`${tab === 'subpoenas' ? 'Subpoena' : 'Resolution'} verification table`}
@@ -165,7 +163,21 @@ export default function Index({ tab, filters, statuses, items }: Props) {
                         )}
                     </div>
 
-                    <Pagination items={items} />
+                    <div
+                        className="xl:hidden"
+                        role="region"
+                        aria-label={`${tab === 'subpoenas' ? 'Subpoena' : 'Resolution'} verification list`}
+                    >
+                        <WorkflowCards tab={tab} items={items.data} />
+                    </div>
+
+                    <Pagination
+                        links={items.links}
+                        from={items.from}
+                        to={items.to}
+                        total={items.total}
+                        ariaLabel="Verification pagination"
+                    />
                 </div>
             </section>
         </AuthenticatedLayout>
@@ -226,7 +238,7 @@ function SubpoenaTable({ items }: { items: WorkflowItem[] }) {
                     >
                         <CaseCells item={item} includeStation />
                         <td className="px-3 py-3">
-                            <Status value={item.subpoena_status} />
+                            <StatusBadge value={item.subpoena_status} />
                         </td>
                         <td className="px-3 py-3">{item.revision_number}</td>
                         <td className="px-3 py-3">{item.created_by}</td>
@@ -308,7 +320,7 @@ function ResolutionTable({ items }: { items: WorkflowItem[] }) {
                         <CaseCells item={item} />
                         <td className="px-3 py-3">{item.resolution_verdict ?? '-'}</td>
                         <td className="px-3 py-3">
-                            <Status value={item.resolution_status} />
+                            <StatusBadge value={item.resolution_status} />
                         </td>
                         <td className="px-3 py-3">{item.court ?? '-'}</td>
                         <td className="px-3 py-3">{item.revision_number ?? '-'}</td>
@@ -378,21 +390,6 @@ function CaseCells({
     );
 }
 
-function Status({ value }: { value?: string | null }) {
-    if (!value) return <span className="text-slate-600">-</span>;
-    const style =
-        value === 'Denied'
-            ? 'bg-red-100 text-red-800'
-            : value === 'Approved'
-              ? 'bg-emerald-100 text-emerald-800'
-              : 'bg-amber-100 text-amber-900';
-    return (
-        <span className={`inline-flex rounded px-2 py-1 text-xs font-semibold ${style}`}>
-            {value}
-        </span>
-    );
-}
-
 function ActionLink({ href, children }: { href: string; children: string }) {
     return (
         <Link
@@ -404,30 +401,115 @@ function ActionLink({ href, children }: { href: string; children: string }) {
     );
 }
 
-function Pagination({ items }: { items: Props['items'] }) {
+function WorkflowCards({ tab, items }: { tab: Props['tab']; items: WorkflowItem[] }) {
+    if (items.length === 0) {
+        return (
+            <EmptyState
+                title={tab === 'subpoenas' ? 'No Subpoenas found.' : 'No Resolutions found.'}
+            />
+        );
+    }
+
     return (
-        <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
-            <span>
-                Showing {items.from ?? 0} to {items.to ?? 0} of {items.total}
-            </span>
-            <div className="flex flex-wrap gap-2">
-                {items.links.map((link, index) =>
-                    link.url ? (
-                        <Link
-                            key={`${link.label}-${index}`}
-                            href={link.url}
-                            className={`min-h-10 rounded-md border px-3 py-2 ${link.active ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`}
-                            dangerouslySetInnerHTML={{ __html: link.label }}
+        <ol>
+            {items.map((item) => (
+                <li key={item.case_id} className="mobile-data-card">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="font-semibold text-slate-950">{item.docket_number}</p>
+                            <p className="mt-1 break-words text-sm text-slate-700">
+                                {item.offenses.join(', ')}
+                            </p>
+                        </div>
+                        <StatusBadge
+                            value={
+                                tab === 'subpoenas' ? item.subpoena_status : item.resolution_status
+                            }
                         />
-                    ) : (
-                        <span
-                            key={`${link.label}-${index}`}
-                            className="min-h-10 rounded-md border border-slate-200 px-3 py-2 text-slate-600"
-                            dangerouslySetInnerHTML={{ __html: link.label }}
-                        />
-                    ),
+                    </div>
+                    <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                        <CardDetail label="Complainant" value={item.complainants.join(', ')} />
+                        <CardDetail label="Respondent" value={item.respondents.join(', ')} />
+                        <CardDetail label="Assigned Prosecutor" value={item.assigned_prosecutor} />
+                        {tab === 'subpoenas' ? (
+                            <>
+                                <CardDetail label="Police Station" value={item.police_station} />
+                                <CardDetail label="Date" value={item.date} />
+                                <CardDetail label="Created By" value={item.created_by ?? '-'} />
+                            </>
+                        ) : (
+                            <>
+                                <CardDetail
+                                    label="Resolution Verdict"
+                                    value={item.resolution_verdict ?? '-'}
+                                />
+                                <CardDetail label="Court" value={item.court ?? '-'} />
+                                <CardDetail label="Submitted By" value={item.submitted_by ?? '-'} />
+                            </>
+                        )}
+                        <CardDetail label="Revision" value={String(item.revision_number ?? '-')} />
+                        <CardDetail label="Workflow" value={item.workflow_label} />
+                    </dl>
+                    {item.denial_reason && (
+                        <p className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+                            <span className="font-semibold">Denial Reason:</span>{' '}
+                            {item.denial_reason}
+                        </p>
+                    )}
+                    <div className="mt-4 flex flex-wrap gap-4 border-t border-slate-200 pt-3">
+                        <WorkflowActions tab={tab} item={item} />
+                    </div>
+                </li>
+            ))}
+        </ol>
+    );
+}
+
+function WorkflowActions({ tab, item }: { tab: Props['tab']; item: WorkflowItem }) {
+    if (tab === 'subpoenas') {
+        return (
+            <>
+                <ActionLink href={`/cases/${item.case_id}`}>View</ActionLink>
+                {item.can_revise && (
+                    <ActionLink href={`/cases/${item.case_id}/edit`}>
+                        {item.subpoena_status === 'Denied' ? 'Revise and Resubmit' : 'Edit'}
+                    </ActionLink>
                 )}
-            </div>
+                {item.can_generate_pdf && (
+                    <button
+                        type="button"
+                        onClick={() => router.post(`/cases/${item.case_id}/documents/subpoena`)}
+                        className="action-link"
+                    >
+                        Generate PDF
+                    </button>
+                )}
+            </>
+        );
+    }
+
+    return (
+        <>
+            {item.resolution_id && (
+                <ActionLink href={`/resolutions/${item.resolution_id}`}>View</ActionLink>
+            )}
+            {item.can_submit && (
+                <ActionLink href={`/cases/${item.case_id}/resolution/create`}>Submit</ActionLink>
+            )}
+            {item.can_revise && item.resolution_id && (
+                <ActionLink href={`/resolutions/${item.resolution_id}/edit`}>
+                    {item.resolution_status === 'Denied' ? 'Revise and Resubmit' : 'Revise'}
+                </ActionLink>
+            )}
+        </>
+    );
+}
+
+function CardDetail({ label, value }: { label: string; value: string }) {
+    return (
+        <div>
+            <dt className="text-xs font-medium text-slate-500">{label}</dt>
+            <dd className="mt-0.5 break-words text-slate-800">{value || '-'}</dd>
         </div>
     );
 }
