@@ -64,17 +64,14 @@ export default function Show({
                     title={resolution.docket_number}
                     description={`Revision ${resolution.revision_number}`}
                     actions={
-                        <Link
-                            href="/resolution-reviews"
-                            className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                        >
+                        <Link href="/resolution-reviews" className="btn btn-secondary">
                             Back to Queue
                         </Link>
                     }
                 />
                 <section className="surface p-5" aria-labelledby="resolution-summary-heading">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
-                        <h2 id="resolution-summary-heading" className="text-lg font-semibold">
+                    <div className="panel-header -mx-5 -mt-5 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                        <h2 id="resolution-summary-heading" className="panel-title">
                             Case Summary
                         </h2>
                         <div className="flex flex-wrap gap-2">
@@ -99,7 +96,7 @@ export default function Show({
                 </section>
 
                 <section className="surface p-5">
-                    <h2 className="text-lg font-semibold">Revision Comparison</h2>
+                    <h2 className="section-title">Revision Comparison</h2>
                     <div
                         className="table-scroll mt-4 hidden md:block"
                         tabIndex={0}
@@ -173,8 +170,8 @@ export default function Show({
 
                 {decisionHistory.length > 0 && (
                     <section className="surface overflow-hidden">
-                        <div className="border-b border-slate-200 px-5 py-4">
-                            <h2 className="text-lg font-semibold">Decision History</h2>
+                        <div className="panel-header px-5 py-4">
+                            <h2 className="panel-title">Decision History</h2>
                         </div>
                         <ol className="divide-y divide-slate-200 text-sm">
                             {decisionHistory.map((decision) => (
@@ -192,7 +189,7 @@ export default function Show({
                                         {decision.decided_by} | {decision.decided_at}
                                     </p>
                                     {decision.comment && (
-                                        <p className="mt-3 whitespace-pre-wrap rounded-md border border-red-200 bg-red-50 p-3 text-red-900">
+                                        <p className="notice notice-danger mt-3 whitespace-pre-wrap">
                                             {decision.comment}
                                         </p>
                                     )}
@@ -203,11 +200,7 @@ export default function Show({
                 )}
 
                 {decisionErrors.map((error) => (
-                    <p
-                        key={error}
-                        role="alert"
-                        className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-                    >
+                    <p key={error} role="alert" className="notice notice-danger">
                         {error}
                     </p>
                 ))}
@@ -225,7 +218,7 @@ export default function Show({
                             <button
                                 type="submit"
                                 disabled={approval.processing || denial.processing}
-                                className="mt-5 min-h-11 rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="btn btn-success mt-5"
                             >
                                 {approval.processing ? 'Approving...' : 'Approve Resolution'}
                             </button>
@@ -238,7 +231,7 @@ export default function Show({
                             <h2 className="text-lg font-semibold">Deny</h2>
                             <label
                                 htmlFor="resolution-denial-comment"
-                                className="mt-3 block text-sm font-medium text-slate-700"
+                                className="field-label mt-3 block"
                             >
                                 Comment
                                 <textarea
@@ -255,14 +248,14 @@ export default function Show({
                                             ? 'resolution-denial-comment-error'
                                             : undefined
                                     }
-                                    className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-700"
+                                    className="input mt-2"
                                 />
                             </label>
                             {denial.errors.comment && (
                                 <p
                                     id="resolution-denial-comment-error"
                                     role="alert"
-                                    className="mt-2 text-sm text-red-800"
+                                    className="field-error"
                                 >
                                     {denial.errors.comment}
                                 </p>
@@ -270,7 +263,7 @@ export default function Show({
                             <button
                                 type="submit"
                                 disabled={approval.processing || denial.processing}
-                                className="mt-4 min-h-11 rounded-md bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="btn btn-danger mt-4"
                             >
                                 {denial.processing ? 'Denying...' : 'Deny Resolution'}
                             </button>

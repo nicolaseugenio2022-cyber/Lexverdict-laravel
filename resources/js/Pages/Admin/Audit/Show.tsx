@@ -29,17 +29,14 @@ export default function Show({ event }: { event: Event }) {
                     title={formatAuditAction(event.action)}
                     description="Recorded event detail"
                     actions={
-                        <Link
-                            href="/admin/audit"
-                            className="inline-flex min-h-11 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2"
-                        >
+                        <Link href="/admin/audit" className="btn btn-secondary">
                             Back to User Action Logs
                         </Link>
                     }
                 />
 
                 <section className="surface p-5" aria-labelledby="event-summary-heading">
-                    <h2 id="event-summary-heading" className="text-lg font-semibold">
+                    <h2 id="event-summary-heading" className="section-title">
                         Event Summary
                     </h2>
                     <dl className="mt-4 grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -51,8 +48,8 @@ export default function Show({ event }: { event: Event }) {
                 </section>
 
                 <section className="surface overflow-hidden" aria-labelledby="changes-heading">
-                    <div className="border-b border-slate-200 px-5 py-4">
-                        <h2 id="changes-heading" className="text-lg font-semibold">
+                    <div className="panel-header px-5 py-4">
+                        <h2 id="changes-heading" className="panel-title">
                             Changes
                         </h2>
                     </div>

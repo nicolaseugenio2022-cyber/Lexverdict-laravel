@@ -13,51 +13,67 @@ export default function Login() {
     }
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 text-slate-950">
+        <main className="flex min-h-[100dvh] items-center justify-center bg-[var(--lv-bg)] px-4 py-10 text-slate-950">
             <Head title="Staff Login" />
-            <form onSubmit={submit} className="w-full max-w-sm rounded-md border border-slate-200 bg-white p-6">
-                <h1 className="text-xl font-semibold">LexVerdict Staff Login</h1>
+            <div className="w-full max-w-md">
+                <header className="login-header rounded-t-md border border-b-0 border-institution-950 bg-institution-950 px-6 py-5 text-white">
+                    <div className="flex items-center gap-3">
+                        <span className="brand-mark" aria-hidden="true">
+                            LV
+                        </span>
+                        <div>
+                            <p className="text-lg font-bold">LexVerdict</p>
+                            <p className="text-sm text-slate-300">
+                                Prosecutor Office Case Management
+                            </p>
+                        </div>
+                    </div>
+                    <div className="mt-4 h-0.5 w-14 bg-gold-500" aria-hidden="true" />
+                </header>
+                <form onSubmit={submit} className="surface rounded-t-none border-t-0 p-6 sm:p-7">
+                    <h1 className="text-xl font-bold text-institution-950">Staff Login</h1>
 
-                <div className="mt-6">
-                    <label htmlFor="username" className="text-sm font-medium text-slate-700">
-                        Username
-                    </label>
-                    <input
-                        id="username"
-                        value={data.username}
-                        onChange={(event) => setData('username', event.target.value)}
-                        autoComplete="username"
-                        className="mt-2 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:border-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                    />
-                    {errors.username && <p className="mt-2 text-sm text-red-700">{errors.username}</p>}
-                </div>
+                    <div className="mt-6">
+                        <label htmlFor="username" className="field-label">
+                            Username
+                        </label>
+                        <input
+                            id="username"
+                            value={data.username}
+                            onChange={(event) => setData('username', event.target.value)}
+                            autoComplete="username"
+                            className="input mt-2"
+                        />
+                        {errors.username && <p className="field-error">{errors.username}</p>}
+                    </div>
 
-                <div className="mt-4">
-                    <label htmlFor="password" className="text-sm font-medium text-slate-700">
-                        Password
-                    </label>
-                    <input
-                        id="password"
-                        type="password"
-                        value={data.password}
-                        onChange={(event) => setData('password', event.target.value)}
-                        autoComplete="current-password"
-                        className="mt-2 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:border-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                    />
-                    {errors.password && <p className="mt-2 text-sm text-red-700">{errors.password}</p>}
-                </div>
+                    <div className="mt-4">
+                        <label htmlFor="password" className="field-label">
+                            Password
+                        </label>
+                        <input
+                            id="password"
+                            type="password"
+                            value={data.password}
+                            onChange={(event) => setData('password', event.target.value)}
+                            autoComplete="current-password"
+                            className="input mt-2"
+                        />
+                        {errors.password && <p className="field-error">{errors.password}</p>}
+                    </div>
 
-                <button
-                    type="submit"
-                    disabled={processing}
-                    className="mt-6 min-h-11 w-full rounded-md bg-blue-900 px-4 font-semibold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                    Login
-                </button>
-                <Link href="/docket" className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-md border border-slate-300 px-4 font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900">
-                    Case Lookup
-                </Link>
-            </form>
+                    <button
+                        type="submit"
+                        disabled={processing}
+                        className="btn btn-primary mt-6 w-full"
+                    >
+                        Login
+                    </button>
+                    <Link href="/docket" className="btn btn-secondary mt-3 w-full">
+                        Case Lookup
+                    </Link>
+                </form>
+            </div>
         </main>
     );
 }

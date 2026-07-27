@@ -64,24 +64,21 @@ export default function Index({ resolutions, filters }: Props) {
                     title="Resolution Review"
                     description="Pending Resolutions awaiting Administrator decision."
                 />
-                <div className="surface p-4">
+                <div className="filter-panel p-4">
                     <form
                         onSubmit={submit}
                         className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1fr)_180px_140px_auto] lg:items-end"
                     >
-                        <label
-                            htmlFor="resolution-review-search"
-                            className="flex-1 text-sm font-medium text-slate-700"
-                        >
+                        <label htmlFor="resolution-review-search" className="field-label flex-1">
                             Search
                             <input
                                 id="resolution-review-search"
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
-                                className="mt-2 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                className="input mt-2"
                             />
                         </label>
-                        <label className="text-sm font-medium text-slate-700">
+                        <label className="field-label">
                             Sort by
                             <select
                                 value={filters.sort}
@@ -95,7 +92,7 @@ export default function Index({ resolutions, filters }: Props) {
                                 <option value="revision_number">Revision</option>
                             </select>
                         </label>
-                        <label className="text-sm font-medium text-slate-700">
+                        <label className="field-label">
                             Order
                             <select
                                 value={filters.direction}
@@ -106,10 +103,7 @@ export default function Index({ resolutions, filters }: Props) {
                                 <option value="desc">Descending</option>
                             </select>
                         </label>
-                        <button
-                            type="submit"
-                            className="min-h-11 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                        >
+                        <button type="submit" className="btn btn-secondary">
                             Apply
                         </button>
                     </form>

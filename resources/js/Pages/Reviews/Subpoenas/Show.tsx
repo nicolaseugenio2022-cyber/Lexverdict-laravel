@@ -87,18 +87,15 @@ export default function Show({
                     title={caseRecord.docket_number}
                     description={`Revision ${caseRecord.revision_number}`}
                     actions={
-                        <Link
-                            href="/subpoena-reviews"
-                            className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                        >
+                        <Link href="/subpoena-reviews" className="btn btn-secondary">
                             Back to Queue
                         </Link>
                     }
                 />
 
                 <section className="surface p-5" aria-labelledby="subpoena-summary-heading">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
-                        <h2 id="subpoena-summary-heading" className="text-lg font-semibold">
+                    <div className="panel-header -mx-5 -mt-5 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                        <h2 id="subpoena-summary-heading" className="panel-title">
                             Case Summary
                         </h2>
                         <StatusBadge value={caseRecord.subpoena_status} />
@@ -122,7 +119,7 @@ export default function Show({
                 </section>
 
                 <section className="surface p-5">
-                    <h2 className="text-lg font-semibold">Revision Comparison</h2>
+                    <h2 className="section-title">Revision Comparison</h2>
                     <p className="mt-1 text-sm text-slate-600">
                         Current submission compared with the immediately preceding revision.
                     </p>
@@ -235,8 +232,8 @@ export default function Show({
 
                 {decisionHistory.length > 0 && (
                     <section className="surface overflow-hidden">
-                        <div className="border-b border-slate-200 px-5 py-4">
-                            <h2 className="text-lg font-semibold">Decision History</h2>
+                        <div className="panel-header px-5 py-4">
+                            <h2 className="panel-title">Decision History</h2>
                         </div>
                         <ol className="divide-y divide-slate-200">
                             {decisionHistory.map((decision) => (
@@ -254,7 +251,7 @@ export default function Show({
                                         {decision.decided_by} | {decision.decided_at}
                                     </p>
                                     {decision.comment && (
-                                        <p className="mt-2 rounded-md border border-red-200 bg-red-50 p-3 text-red-900">
+                                        <p className="notice notice-danger mt-2">
                                             {decision.comment}
                                         </p>
                                     )}
@@ -265,11 +262,7 @@ export default function Show({
                 )}
 
                 {decisionErrors.map((error) => (
-                    <p
-                        key={error}
-                        role="alert"
-                        className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-                    >
+                    <p key={error} role="alert" className="notice notice-danger">
                         {error}
                     </p>
                 ))}
@@ -294,7 +287,7 @@ export default function Show({
                             <button
                                 disabled={approval.processing || denial.processing}
                                 type="submit"
-                                className="mt-5 min-h-11 rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="btn btn-success mt-5"
                             >
                                 {approval.processing ? 'Approving...' : 'Approve Subpoena'}
                             </button>
@@ -306,10 +299,7 @@ export default function Show({
                             className="surface border-t-4 border-t-red-700 p-5"
                         >
                             <h3 className="text-lg font-semibold">Deny</h3>
-                            <label
-                                htmlFor="denial-comment"
-                                className="mt-3 block text-sm font-medium text-slate-700"
-                            >
+                            <label htmlFor="denial-comment" className="field-label mt-3 block">
                                 Comment
                                 <textarea
                                     id="denial-comment"
@@ -323,22 +313,18 @@ export default function Show({
                                     aria-describedby={
                                         denial.errors.comment ? 'denial-comment-error' : undefined
                                     }
-                                    className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-700"
+                                    className="input mt-2"
                                 />
                             </label>
                             {denial.errors.comment && (
-                                <p
-                                    id="denial-comment-error"
-                                    role="alert"
-                                    className="mt-2 text-sm text-red-800"
-                                >
+                                <p id="denial-comment-error" role="alert" className="field-error">
                                     {denial.errors.comment}
                                 </p>
                             )}
                             <button
                                 disabled={approval.processing || denial.processing}
                                 type="submit"
-                                className="mt-4 min-h-11 rounded-md bg-red-700 px-4 text-sm font-semibold text-white transition hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="btn btn-danger mt-4"
                             >
                                 {denial.processing ? 'Denying...' : 'Deny Subpoena'}
                             </button>

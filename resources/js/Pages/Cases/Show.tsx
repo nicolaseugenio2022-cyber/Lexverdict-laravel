@@ -113,7 +113,7 @@ export default function Show({
             <section className="space-y-6">
                 {case_pin && (
                     <div
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"
+                        className="notice notice-warning flex flex-wrap items-center justify-between gap-3"
                         role="status"
                     >
                         <p className="font-semibold">PIN</p>
@@ -126,16 +126,13 @@ export default function Show({
                     title={caseRecord.docket_number}
                     actions={
                         <>
-                            <Link
-                                href={back_url}
-                                className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                            >
+                            <Link href={back_url} className="btn btn-secondary">
                                 Back to Cases
                             </Link>
                             {can_revise && (
                                 <Link
                                     href={`/cases/${caseRecord.id}/edit`}
-                                    className="inline-flex min-h-11 items-center rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                    className="btn btn-primary"
                                 >
                                     Revise
                                 </Link>
@@ -145,8 +142,8 @@ export default function Show({
                 />
 
                 <section className="surface p-5" aria-labelledby="case-overview-heading">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
-                        <h2 id="case-overview-heading" className="text-lg font-semibold">
+                    <div className="panel-header -mx-5 -mt-5 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                        <h2 id="case-overview-heading" className="panel-title">
                             Case Overview
                         </h2>
                         <div className="flex items-center gap-2 text-sm">
@@ -234,7 +231,7 @@ export default function Show({
                                                 {decision.decided_by} | {decision.decided_at}
                                             </p>
                                             {decision.comment && (
-                                                <p className="mt-3 whitespace-pre-wrap rounded-md border border-red-200 bg-red-50 p-3 text-red-900">
+                                                <p className="notice notice-danger mt-3 whitespace-pre-wrap">
                                                     {decision.comment}
                                                 </p>
                                             )}
@@ -259,14 +256,14 @@ export default function Show({
                                     <div className="flex flex-wrap gap-2">
                                         <Link
                                             href={`/resolutions/${resolution.id}`}
-                                            className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                            className="btn btn-secondary"
                                         >
                                             View Resolution
                                         </Link>
                                         {can_revise_resolution && (
                                             <Link
                                                 href={`/resolutions/${resolution.id}/edit`}
-                                                className="inline-flex min-h-11 items-center rounded-md bg-blue-900 px-4 font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                                className="btn btn-primary"
                                             >
                                                 Revise Resolution
                                             </Link>
@@ -276,7 +273,7 @@ export default function Show({
                             ) : can_submit_resolution ? (
                                 <Link
                                     href={`/cases/${caseRecord.id}/resolution/create`}
-                                    className="inline-flex min-h-11 items-center rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                    className="btn btn-primary"
                                 >
                                     Submit Resolution
                                 </Link>
@@ -292,7 +289,7 @@ export default function Show({
                                         type="button"
                                         onClick={generateSubpoena}
                                         disabled={generating}
-                                        className="min-h-11 rounded-md bg-blue-900 px-4 font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                        className="btn btn-primary"
                                     >
                                         {generating ? 'Generating' : 'Generate Subpoena PDF'}
                                     </button>
@@ -319,7 +316,7 @@ export default function Show({
                                                         href={`/cases/${caseRecord.id}/documents/${document.id}`}
                                                         target="_blank"
                                                         rel="noreferrer"
-                                                        className="mt-3 inline-flex min-h-11 items-center font-semibold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                                        className="action-link mt-3 min-h-11"
                                                     >
                                                         View PDF
                                                     </a>
@@ -348,7 +345,7 @@ export default function Show({
                             {timeline.map((item, index) => (
                                 <li
                                     key={`${item.label}-${index}`}
-                                    className="relative pb-5 pl-5 last:pb-0 before:absolute before:-left-1.5 before:top-1.5 before:size-3 before:rounded-full before:border-2 before:border-white before:bg-blue-900"
+                                    className="relative pb-5 pl-5 last:pb-0 before:absolute before:-left-1.5 before:top-1.5 before:size-3 before:rounded-full before:border-2 before:border-white before:bg-institution-800"
                                 >
                                     <p className="font-semibold">{item.label}</p>
                                     <p className="mt-1 text-slate-600">{item.at ?? ''}</p>
@@ -377,7 +374,7 @@ function Detail({ label, value }: { label: string; value: string }) {
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
     return (
         <section className="surface p-5">
-            <h2 className="border-b border-slate-200 pb-3 text-lg font-semibold">{title}</h2>
+            <h2 className="section-title border-b border-slate-200 pb-3">{title}</h2>
             <div className="mt-4">{children}</div>
         </section>
     );

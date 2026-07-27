@@ -37,9 +37,9 @@ export default function Index({ events, filters }: Props) {
                 <form
                     method="get"
                     action="/admin/audit"
-                    className="surface grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_180px_160px_140px_auto]"
+                    className="filter-panel grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_180px_160px_140px_auto]"
                 >
-                    <label className="text-sm font-medium text-slate-700">
+                    <label className="field-label">
                         Search
                         <input
                             name="search"
@@ -48,7 +48,7 @@ export default function Index({ events, filters }: Props) {
                             className="input mt-2"
                         />
                     </label>
-                    <label className="text-sm font-medium text-slate-700">
+                    <label className="field-label">
                         Filter
                         <select name="filter" defaultValue={filters.filter} className="input mt-2">
                             <option value="">All Fields</option>
@@ -59,7 +59,7 @@ export default function Index({ events, filters }: Props) {
                             <option value="timestamp">Date</option>
                         </select>
                     </label>
-                    <label className="text-sm font-medium text-slate-700">
+                    <label className="field-label">
                         Sort by
                         <select name="sort" defaultValue={filters.sort} className="input mt-2">
                             <option value="log_id">Log ID</option>
@@ -70,7 +70,7 @@ export default function Index({ events, filters }: Props) {
                             <option value="timestamp">Date</option>
                         </select>
                     </label>
-                    <label className="text-sm font-medium text-slate-700">
+                    <label className="field-label">
                         Order
                         <select name="order" defaultValue={filters.order} className="input mt-2">
                             <option value="desc">Descending</option>
@@ -79,7 +79,7 @@ export default function Index({ events, filters }: Props) {
                     </label>
                     <button
                         type="submit"
-                        className="min-h-11 self-end rounded-md bg-blue-900 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 md:col-span-2 xl:col-span-1"
+                        className="btn btn-primary self-end md:col-span-2 xl:col-span-1"
                     >
                         Search
                     </button>
@@ -89,8 +89,8 @@ export default function Index({ events, filters }: Props) {
                     className="surface overflow-hidden"
                     aria-labelledby="audit-history-heading"
                 >
-                    <div className="border-b border-slate-200 px-4 py-3 sm:px-5">
-                        <h2 id="audit-history-heading" className="font-semibold text-slate-900">
+                    <div className="panel-header px-4 py-3 sm:px-5">
+                        <h2 id="audit-history-heading" className="panel-title">
                             Audit History
                         </h2>
                     </div>
@@ -135,7 +135,7 @@ export default function Index({ events, filters }: Props) {
                                         </dl>
                                         <Link
                                             href={`/admin/audit/${event.log_id}`}
-                                            className="action-link justify-center border border-slate-300 px-3 hover:bg-slate-50"
+                                            className="btn btn-secondary justify-center"
                                         >
                                             View details
                                         </Link>

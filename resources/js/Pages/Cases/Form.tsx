@@ -122,7 +122,7 @@ export default function Form({
                 }
             />
             <form onSubmit={submit} className="space-y-5">
-                <div className="rounded-md border border-slate-200 bg-white p-5">
+                <div className="surface p-5">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
                             <h1 className="text-xl font-semibold">
@@ -136,17 +136,14 @@ export default function Form({
                         </div>
                         <Link
                             href={caseRecord ? `/cases/${caseRecord.id}` : '/cases'}
-                            className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                            className="btn btn-secondary"
                         >
                             Cancel
                         </Link>
                     </div>
 
                     {caseErrors.map((error) => (
-                        <p
-                            key={error}
-                            className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-                        >
+                        <p key={error} className="notice notice-danger mt-4">
                             {error}
                         </p>
                     ))}
@@ -155,7 +152,7 @@ export default function Form({
                         denial_comments.map((denial) => (
                             <div
                                 key={`${denial.revision_number}-${denial.decided_at}`}
-                                className="mt-4 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+                                className="notice notice-danger mt-4"
                                 role="status"
                             >
                                 <p className="font-semibold">
@@ -213,21 +210,27 @@ export default function Form({
                         <Field label="Police Station" error={errors.police_station}>
                             <input
                                 className="input"
-                                list={police_stations.length > 0 ? 'legacy-police-stations' : undefined}
+                                list={
+                                    police_stations.length > 0
+                                        ? 'legacy-police-stations'
+                                        : undefined
+                                }
                                 value={data.police_station}
                                 onChange={(event) => setData('police_station', event.target.value)}
                             />
                             {police_stations.length > 0 && (
                                 <datalist id="legacy-police-stations">
-                                    {police_stations.map((station) => <option key={station} value={station} />)}
+                                    {police_stations.map((station) => (
+                                        <option key={station} value={station} />
+                                    ))}
                                 </datalist>
                             )}
                         </Field>
                     </div>
                 </div>
 
-                <div className="rounded-md border border-slate-200 bg-white p-5">
-                    <h2 className="text-lg font-semibold">Crimes</h2>
+                <div className="surface p-5">
+                    <h2 className="section-title">Crimes</h2>
                     <div className="mt-4">
                         <CrimeAutocomplete
                             offenses={offenses}
@@ -238,16 +241,16 @@ export default function Form({
                     </div>
                 </div>
 
-                <div className="rounded-md border border-slate-200 bg-white p-5">
+                <div className="surface p-5">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <h2 className="text-lg font-semibold">Parties</h2>
+                        <h2 className="section-title">Parties</h2>
                         <div className="flex flex-wrap gap-2">
                             {partyRoles.map((role) => (
                                 <button
                                     key={role}
                                     type="button"
                                     onClick={() => addParty(role)}
-                                    className="min-h-11 rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                    className="btn btn-neutral"
                                 >
                                     Add {role}
                                 </button>
@@ -368,7 +371,7 @@ export default function Form({
                                 <button
                                     type="button"
                                     onClick={() => removeParty(index)}
-                                    className="mt-4 min-h-11 rounded-md border border-red-200 px-3 text-sm font-semibold text-red-700 disabled:opacity-50"
+                                    className="btn btn-danger mt-4"
                                     disabled={data.parties.length <= 2}
                                 >
                                     Remove Party
@@ -379,11 +382,7 @@ export default function Form({
                 </div>
 
                 <div className="flex justify-end">
-                    <button
-                        type="submit"
-                        disabled={processing}
-                        className="min-h-11 rounded-md bg-blue-900 px-5 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 disabled:opacity-50"
-                    >
+                    <button type="submit" disabled={processing} className="btn btn-primary">
                         {mode === 'create' ? 'Create Case' : 'Save Revision'}
                     </button>
                 </div>
@@ -402,10 +401,10 @@ function Field({
     children: React.ReactNode;
 }) {
     return (
-        <label className="block text-sm font-medium text-slate-700">
+        <label className="field-label block">
             {label}
             <div className="mt-2">{children}</div>
-            {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+            {error && <p className="field-error">{error}</p>}
         </label>
     );
 }

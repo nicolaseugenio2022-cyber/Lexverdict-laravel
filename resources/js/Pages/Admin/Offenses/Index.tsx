@@ -1,6 +1,7 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import PageHeader from '../../../Components/PageHeader';
 import Pagination, { type PaginationLink } from '../../../Components/Pagination';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 
@@ -60,7 +61,11 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
 
     function edit(offense: Offense) {
         setSelected(offense);
-        setData({ name: offense.name, law_reference: offense.law_reference ?? '', delete_error: '' });
+        setData({
+            name: offense.name,
+            law_reference: offense.law_reference ?? '',
+            delete_error: '',
+        });
         clearErrors();
         document.getElementById('crime-name')?.focus();
     }
@@ -86,29 +91,19 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
     return (
         <AuthenticatedLayout>
             <Head title="Manage Crimes" />
-            <section aria-labelledby="manage-crimes-title" className="space-y-5">
-                <div>
-                    <h1 id="manage-crimes-title" className="text-xl font-semibold">
-                        Manage Crimes
-                    </h1>
-                    <p className="mt-1 text-sm text-slate-600">
-                        Crime catalog and Law Reference records.
-                    </p>
-                </div>
+            <section className="space-y-6">
+                <PageHeader
+                    eyebrow="Administrator"
+                    title="Manage Crimes"
+                    description="Crime catalog and Law Reference records."
+                />
 
-                <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
-                    {catalog_notice}
-                </p>
+                <p className="notice notice-warning">{catalog_notice}</p>
 
                 <div className="grid min-w-0 gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
-                    <form
-                        onSubmit={save}
-                        className="h-fit rounded-md border border-slate-200 bg-white p-4"
-                    >
-                        <div className="border-b border-slate-200 pb-3">
-                            <h2 className="text-base font-semibold">
-                                {selected ? 'Edit Crime' : 'Add Crime'}
-                            </h2>
+                    <form onSubmit={save} className="surface h-fit p-4">
+                        <div className="panel-header -mx-4 -mt-4 px-4 py-3">
+                            <h2 className="panel-title">{selected ? 'Edit Crime' : 'Add Crime'}</h2>
                             {selected && (
                                 <p className="mt-1 text-xs text-slate-600">
                                     Editing {selected.name}
@@ -116,10 +111,7 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
                             )}
                         </div>
 
-                        <label
-                            className="mt-4 block text-sm font-medium text-slate-700"
-                            htmlFor="crime-name"
-                        >
+                        <label className="field-label mt-4 block" htmlFor="crime-name">
                             Crime Name
                         </label>
                         <input
@@ -130,12 +122,9 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
                             maxLength={255}
                             required
                         />
-                        {errors.name && <p className="mt-2 text-sm text-red-700">{errors.name}</p>}
+                        {errors.name && <p className="field-error">{errors.name}</p>}
 
-                        <label
-                            className="mt-4 block text-sm font-medium text-slate-700"
-                            htmlFor="law-reference"
-                        >
+                        <label className="field-label mt-4 block" htmlFor="law-reference">
                             Law Reference
                         </label>
                         <input
@@ -146,22 +135,18 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
                             maxLength={255}
                         />
                         {errors.law_reference && (
-                            <p className="mt-2 text-sm text-red-700">{errors.law_reference}</p>
+                            <p className="field-error">{errors.law_reference}</p>
                         )}
 
                         <div className="mt-5 flex flex-wrap gap-2">
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className="min-h-11 rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 disabled:opacity-50"
-                            >
+                            <button type="submit" disabled={processing} className="btn btn-primary">
                                 {selected ? 'Save Changes' : 'Add Crime'}
                             </button>
                             {selected && (
                                 <button
                                     type="button"
                                     onClick={clearSelection}
-                                    className="min-h-11 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2"
+                                    className="btn btn-secondary"
                                 >
                                     Cancel
                                 </button>
@@ -169,12 +154,12 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
                         </div>
                     </form>
 
-                    <div className="min-w-0 rounded-md border border-slate-200 bg-white">
+                    <div className="surface min-w-0 overflow-hidden">
                         <form
                             onSubmit={filter}
-                            className="grid gap-3 border-b border-slate-200 p-4 md:grid-cols-[minmax(220px,1fr)_auto]"
+                            className="filter-panel grid gap-3 rounded-none border-x-0 border-t-0 p-4 md:grid-cols-[minmax(220px,1fr)_auto]"
                         >
-                            <label className="text-sm font-medium text-slate-700">
+                            <label className="field-label">
                                 Search
                                 <input
                                     className="input mt-2"
@@ -182,16 +167,16 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
                                     onChange={(event) => setSearch(event.target.value)}
                                 />
                             </label>
-                            <button
-                                type="submit"
-                                className="min-h-11 self-end rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2"
-                            >
+                            <button type="submit" className="btn btn-secondary self-end">
                                 Apply
                             </button>
                         </form>
 
                         {errors.delete_error && (
-                            <p role="alert" className="border-b border-red-200 bg-red-50 p-4 text-sm text-red-900">
+                            <p
+                                role="alert"
+                                className="notice notice-danger rounded-none border-x-0 border-t-0"
+                            >
                                 {errors.delete_error}
                             </p>
                         )}
@@ -229,22 +214,31 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
                                                     <button
                                                         type="button"
                                                         onClick={() => edit(offense)}
-                                                        className="font-semibold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2"
+                                                        className="action-link"
                                                     >
                                                         Edit
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={() => deleteOffense(offense)}
-                                                        disabled={offense.cases_count > 0 || processing}
-                                                        aria-describedby={offense.cases_count > 0 ? `crime-delete-${offense.id}` : undefined}
+                                                        disabled={
+                                                            offense.cases_count > 0 || processing
+                                                        }
+                                                        aria-describedby={
+                                                            offense.cases_count > 0
+                                                                ? `crime-delete-${offense.id}`
+                                                                : undefined
+                                                        }
                                                         className="font-semibold text-red-700 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:text-slate-400"
                                                     >
                                                         Delete
                                                     </button>
                                                 </div>
                                                 {offense.cases_count > 0 && (
-                                                    <p id={`crime-delete-${offense.id}`} className="mt-1 max-w-52 text-xs text-slate-600">
+                                                    <p
+                                                        id={`crime-delete-${offense.id}`}
+                                                        className="mt-1 max-w-52 text-xs text-slate-600"
+                                                    >
                                                         Referenced Crimes cannot be deleted.
                                                     </p>
                                                 )}

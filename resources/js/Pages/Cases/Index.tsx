@@ -15,8 +15,8 @@ type PaginatedCases = {
     links: PaginationLink[];
     from: number | null;
     to: number | null;
-        total: number;
-        current_page: number;
+    total: number;
+    current_page: number;
 };
 
 type Props = {
@@ -76,24 +76,21 @@ export default function Index({
                     }
                     actions={
                         can_create_case ? (
-                            <Link
-                                href="/cases/create"
-                                className="inline-flex min-h-11 items-center justify-center rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                            >
+                            <Link href="/cases/create" className="btn btn-primary">
                                 Create Case
                             </Link>
                         ) : undefined
                     }
                 />
 
-                <div className="surface p-4 sm:p-5">
+                <div className="filter-panel p-4 sm:p-5">
                     <div className="grid gap-4 lg:grid-cols-2">
                         <div className="grid gap-3 sm:grid-cols-2">
-                            <label className="text-sm font-medium text-slate-700">
+                            <label className="field-label">
                                 Sort by
                                 <select
                                     aria-label="Sort by"
-                                    className="mt-2 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                    className="input mt-2"
                                     value={filters.sort}
                                     onChange={(event) => navigate({ sort: event.target.value })}
                                 >
@@ -104,11 +101,11 @@ export default function Index({
                                     ))}
                                 </select>
                             </label>
-                            <label className="text-sm font-medium text-slate-700">
+                            <label className="field-label">
                                 Order
                                 <select
                                     aria-label="Order"
-                                    className="mt-2 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                    className="input mt-2"
                                     value={filters.order}
                                     onChange={(event) =>
                                         navigate({ order: event.target.value as 'asc' | 'desc' })
@@ -124,18 +121,18 @@ export default function Index({
                             onSubmit={submit}
                             className="grid gap-3 sm:grid-cols-[1fr_180px_auto]"
                         >
-                            <label className="text-sm font-medium text-slate-700">
+                            <label className="field-label">
                                 Search
                                 <input
-                                    className="mt-2 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                    className="input mt-2"
                                     value={search}
                                     onChange={(event) => setSearch(event.target.value)}
                                 />
                             </label>
-                            <label className="text-sm font-medium text-slate-700">
+                            <label className="field-label">
                                 Search field
                                 <select
-                                    className="mt-2 min-h-11 w-full rounded-md border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                    className="input mt-2"
                                     value={filter}
                                     onChange={(event) => setFilter(event.target.value)}
                                 >
@@ -147,10 +144,7 @@ export default function Index({
                                     ))}
                                 </select>
                             </label>
-                            <button
-                                type="submit"
-                                className="min-h-11 self-end rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                            >
+                            <button type="submit" className="btn btn-secondary self-end">
                                 Search
                             </button>
                         </form>
@@ -164,7 +158,9 @@ export default function Index({
                         role="region"
                         aria-label="Cases table"
                     >
-                        <table className={`w-full text-left text-sm ${prosecutorProjection ? 'table-fixed' : commandColumn ? 'min-w-[1700px]' : 'min-w-[1500px]'}`}>
+                        <table
+                            className={`w-full text-left text-sm ${prosecutorProjection ? 'table-fixed' : commandColumn ? 'min-w-[1700px]' : 'min-w-[1500px]'}`}
+                        >
                             <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                                 <tr>
                                     <Header>
@@ -175,15 +171,23 @@ export default function Index({
                                     <Header>Respondent</Header>
                                     {!prosecutorProjection && <Header>Police Station</Header>}
                                     <Header>Date</Header>
-                                    {!prosecutorProjection && <Header>
-                                        {is_process_server ? 'Assigned Prosecutor' : 'Prosecutor'}
-                                    </Header>}
+                                    {!prosecutorProjection && (
+                                        <Header>
+                                            {is_process_server
+                                                ? 'Assigned Prosecutor'
+                                                : 'Prosecutor'}
+                                        </Header>
+                                    )}
                                     <Header>
                                         {is_process_server ? 'Resolution Verdict' : 'Verdict'}
                                     </Header>
                                     {!prosecutorProjection && <Header>Court</Header>}
                                     {!prosecutorProjection && <Header>{dateColumnLabel}</Header>}
-                                    {commandColumn && <Header>{prosecutorProjection ? 'Actions' : 'Command'}</Header>}
+                                    {commandColumn && (
+                                        <Header>
+                                            {prosecutorProjection ? 'Actions' : 'Command'}
+                                        </Header>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody>
@@ -198,9 +202,15 @@ export default function Index({
                                         <Cell>{value(caseRecord.offenses.join(', '))}</Cell>
                                         <Cell>{value(caseRecord.complainants.join(', '))}</Cell>
                                         <Cell>{value(caseRecord.respondents.join(', '))}</Cell>
-                                        {!prosecutorProjection && <Cell>{value(caseRecord.police_station)}</Cell>}
+                                        {!prosecutorProjection && (
+                                            <Cell>{value(caseRecord.police_station)}</Cell>
+                                        )}
                                         <Cell>{formatDate(caseRecord.date)}</Cell>
-                                        {!prosecutorProjection && <Cell>{value(caseRecord.assigned_prosecutor_name)}</Cell>}
+                                        {!prosecutorProjection && (
+                                            <Cell>
+                                                {value(caseRecord.assigned_prosecutor_name)}
+                                            </Cell>
+                                        )}
                                         <Cell>
                                             <StatusBadge
                                                 value={
@@ -210,11 +220,18 @@ export default function Index({
                                                 }
                                             />
                                         </Cell>
-                                        {!prosecutorProjection && <Cell>{value(caseRecord.court)}</Cell>}
-                                        {!prosecutorProjection && <Cell>{formatDate(caseRecord.verdict_date)}</Cell>}
+                                        {!prosecutorProjection && (
+                                            <Cell>{value(caseRecord.court)}</Cell>
+                                        )}
+                                        {!prosecutorProjection && (
+                                            <Cell>{formatDate(caseRecord.verdict_date)}</Cell>
+                                        )}
                                         {commandColumn && (
                                             <Cell>
-                                                <CaseCommands caseRecord={caseRecord} returnUrl={returnUrl} />
+                                                <CaseCommands
+                                                    caseRecord={caseRecord}
+                                                    returnUrl={returnUrl}
+                                                />
                                             </Cell>
                                         )}
                                     </tr>
@@ -223,7 +240,9 @@ export default function Index({
                                     <tr>
                                         <td
                                             className="px-4 py-8 text-center text-slate-600"
-                                            colSpan={prosecutorProjection ? 7 : commandColumn ? 11 : 10}
+                                            colSpan={
+                                                prosecutorProjection ? 7 : commandColumn ? 11 : 10
+                                            }
                                         >
                                             No cases found.
                                         </td>
@@ -265,34 +284,47 @@ export default function Index({
                                                 label="Respondent"
                                                 value={value(caseRecord.respondents.join(', '))}
                                             />
-                                            {!prosecutorProjection && <MobileDetail
-                                                label="Police Station"
-                                                value={value(caseRecord.police_station)}
-                                            />}
+                                            {!prosecutorProjection && (
+                                                <MobileDetail
+                                                    label="Police Station"
+                                                    value={value(caseRecord.police_station)}
+                                                />
+                                            )}
                                             <MobileDetail
                                                 label="Date"
                                                 value={formatDate(caseRecord.date)}
                                             />
-                                            {!prosecutorProjection && <MobileDetail
-                                                label={
-                                                    is_process_server
-                                                        ? 'Assigned Prosecutor'
-                                                        : 'Prosecutor'
-                                                }
-                                                value={value(caseRecord.assigned_prosecutor_name)}
-                                            />}
-                                            {!prosecutorProjection && <MobileDetail
-                                                label="Court"
-                                                value={value(caseRecord.court)}
-                                            />}
-                                            {!prosecutorProjection && <MobileDetail
-                                                label={dateColumnLabel}
-                                                value={formatDate(caseRecord.verdict_date)}
-                                            />}
+                                            {!prosecutorProjection && (
+                                                <MobileDetail
+                                                    label={
+                                                        is_process_server
+                                                            ? 'Assigned Prosecutor'
+                                                            : 'Prosecutor'
+                                                    }
+                                                    value={value(
+                                                        caseRecord.assigned_prosecutor_name,
+                                                    )}
+                                                />
+                                            )}
+                                            {!prosecutorProjection && (
+                                                <MobileDetail
+                                                    label="Court"
+                                                    value={value(caseRecord.court)}
+                                                />
+                                            )}
+                                            {!prosecutorProjection && (
+                                                <MobileDetail
+                                                    label={dateColumnLabel}
+                                                    value={formatDate(caseRecord.verdict_date)}
+                                                />
+                                            )}
                                         </dl>
                                         {commandColumn && (
                                             <div className="mt-4 border-t border-slate-200 pt-3">
-                                                <CaseCommands caseRecord={caseRecord} returnUrl={returnUrl} />
+                                                <CaseCommands
+                                                    caseRecord={caseRecord}
+                                                    returnUrl={returnUrl}
+                                                />
                                             </div>
                                         )}
                                     </li>
@@ -318,7 +350,7 @@ function CaseCommands({ caseRecord, returnUrl }: { caseRecord: CaseRecord; retur
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <Link
                 href={`/cases/${caseRecord.id}?return_to=${encodeURIComponent(returnUrl)}`}
-                className="font-semibold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                className="action-link"
             >
                 View
             </Link>
@@ -334,10 +366,7 @@ function CaseCommands({ caseRecord, returnUrl }: { caseRecord: CaseRecord; retur
                 </span>
             )}
             {caseRecord.can_submit_resolution && (
-                <Link
-                    href={`/cases/${caseRecord.id}/resolution/create`}
-                    className="font-semibold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                >
+                <Link href={`/cases/${caseRecord.id}/resolution/create`} className="action-link">
                     Resolve
                 </Link>
             )}
@@ -345,7 +374,7 @@ function CaseCommands({ caseRecord, returnUrl }: { caseRecord: CaseRecord; retur
                 <button
                     type="button"
                     onClick={() => router.post(`/cases/${caseRecord.id}/documents/subpoena`)}
-                    className="font-semibold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="action-link"
                 >
                     Generate PDF
                 </button>

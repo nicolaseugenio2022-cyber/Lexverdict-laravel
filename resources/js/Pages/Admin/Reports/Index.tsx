@@ -55,9 +55,22 @@ type Props = {
     export_query: string;
 };
 
-const chartColors = ['#1e3a8a', '#b45309', '#047857', '#be123c', '#0369a1', '#6d28d9'];
+const chartColorTokens = [
+    '--lv-chart-1',
+    '--lv-chart-2',
+    '--lv-chart-3',
+    '--lv-chart-4',
+    '--lv-chart-5',
+    '--lv-chart-6',
+];
+
+function cssToken(name: string) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
 
 function chartData(data: Distribution[], label: string) {
+    const chartColors = chartColorTokens.map(cssToken);
+
     return {
         labels: data.map((item) => item.label),
         datasets: [
@@ -65,7 +78,7 @@ function chartData(data: Distribution[], label: string) {
                 label,
                 data: data.map((item) => item.count),
                 backgroundColor: data.map((_, index) => chartColors[index % chartColors.length]),
-                borderColor: '#ffffff',
+                borderColor: cssToken('--lv-surface'),
                 borderWidth: 1,
             },
         ],
@@ -79,7 +92,12 @@ const sharedRadialOptions = {
     plugins: {
         legend: {
             position: 'bottom' as const,
-            labels: { boxWidth: 12, padding: 16, color: '#334155', usePointStyle: true },
+            labels: {
+                boxWidth: 12,
+                padding: 16,
+                color: cssToken('--lv-text-secondary'),
+                usePointStyle: true,
+            },
         },
         tooltip: { enabled: true },
     },
@@ -119,8 +137,8 @@ function DistributionChart({
     };
 
     return (
-        <section className="surface min-w-0 p-4 sm:p-5" aria-labelledby={`${slug}-title`}>
-            <h2 id={`${slug}-title`} className="text-base font-semibold text-slate-950">
+        <section className="surface-elevated min-w-0 p-4 sm:p-5" aria-labelledby={`${slug}-title`}>
+            <h2 id={`${slug}-title`} className="section-title">
                 {title}
             </h2>
             {data.length === 0 ? (
@@ -203,13 +221,13 @@ export default function Index({ report, filters, offenses, stations, export_quer
                                 href={`/admin/reports/pdf${exportSuffix}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                                className="btn btn-secondary"
                             >
                                 Generate Report PDF
                             </a>
                             <a
                                 href={`/admin/reports/csv${exportSuffix}`}
-                                className="inline-flex min-h-11 items-center rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2"
+                                className="btn btn-primary"
                             >
                                 Export CSV
                             </a>
@@ -220,10 +238,10 @@ export default function Index({ report, filters, offenses, stations, export_quer
                 <form
                     method="get"
                     action="/admin/reports"
-                    className="surface grid gap-4 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4"
+                    className="filter-panel grid gap-4 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4"
                 >
                     <input type="hidden" name="generate" value="1" />
-                    <label className="text-sm font-medium">
+                    <label className="field-label">
                         Date From
                         <input
                             type="date"
@@ -232,7 +250,7 @@ export default function Index({ report, filters, offenses, stations, export_quer
                             className="input mt-1"
                         />
                     </label>
-                    <label className="text-sm font-medium">
+                    <label className="field-label">
                         Date To
                         <input
                             type="date"
@@ -241,7 +259,7 @@ export default function Index({ report, filters, offenses, stations, export_quer
                             className="input mt-1"
                         />
                     </label>
-                    <label className="text-sm font-medium">
+                    <label className="field-label">
                         Case Status
                         <select
                             name="verdict"
@@ -253,7 +271,7 @@ export default function Index({ report, filters, offenses, stations, export_quer
                             <option value="Dismissed">Dismissed</option>
                         </select>
                     </label>
-                    <label className="text-sm font-medium">
+                    <label className="field-label">
                         Police Station
                         <select
                             name="station"
@@ -268,7 +286,7 @@ export default function Index({ report, filters, offenses, stations, export_quer
                             ))}
                         </select>
                     </label>
-                    <label className="text-sm font-medium sm:col-span-2">
+                    <label className="field-label sm:col-span-2">
                         Case Type
                         <select
                             multiple
@@ -283,7 +301,7 @@ export default function Index({ report, filters, offenses, stations, export_quer
                             ))}
                         </select>
                     </label>
-                    <label className="text-sm font-medium">
+                    <label className="field-label">
                         Sex
                         <select name="sex" defaultValue={filters.sex ?? ''} className="input mt-1">
                             <option value="">All</option>
@@ -291,7 +309,7 @@ export default function Index({ report, filters, offenses, stations, export_quer
                             <option value="Female">Female</option>
                         </select>
                     </label>
-                    <label className="text-sm font-medium">
+                    <label className="field-label">
                         Age Group
                         <select
                             name="age_group"
@@ -307,16 +325,10 @@ export default function Index({ report, filters, offenses, stations, export_quer
                         </select>
                     </label>
                     <div className="flex flex-wrap items-end gap-2 border-t border-slate-200 pt-4 sm:col-span-2 lg:col-span-4">
-                        <button
-                            type="submit"
-                            className="min-h-11 rounded-md bg-blue-900 px-5 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2"
-                        >
+                        <button type="submit" className="btn btn-primary">
                             Generate
                         </button>
-                        <a
-                            href="/admin/reports"
-                            className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                        >
+                        <a href="/admin/reports" className="btn btn-secondary">
                             Clear
                         </a>
                     </div>
@@ -332,7 +344,7 @@ export default function Index({ report, filters, offenses, stations, export_quer
                 ) : (
                     <>
                         <section aria-labelledby="case-summary-title">
-                            <h2 id="case-summary-title" className="mb-3 text-lg font-semibold">
+                            <h2 id="case-summary-title" className="section-title mb-3">
                                 Case Summary
                             </h2>
                             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -342,16 +354,9 @@ export default function Index({ report, filters, offenses, stations, export_quer
                                     ['Cases Dismissed', report.dismissed],
                                     ['Top Case Type', report.most_common_crime ?? 'N/A'],
                                 ].map(([label, value]) => (
-                                    <dl
-                                        key={label}
-                                        className="surface border-t-4 border-t-blue-900 p-4"
-                                    >
-                                        <dt className="text-sm font-medium text-slate-600">
-                                            {label}
-                                        </dt>
-                                        <dd className="mt-2 text-2xl font-semibold tabular-nums">
-                                            {value}
-                                        </dd>
+                                    <dl key={label} className="summary-card">
+                                        <dt className="metric-label">{label}</dt>
+                                        <dd className="metric-value mt-2">{value}</dd>
                                     </dl>
                                 ))}
                             </div>

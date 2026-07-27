@@ -57,34 +57,28 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
     }
 
     return (
-        <div className="min-h-[100dvh] bg-slate-50 text-slate-950">
-            <a
-                href="#main-content"
-                className="sr-only z-50 rounded-md bg-white px-3 py-2 font-semibold text-blue-900 focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:ring-2 focus:ring-blue-900"
-            >
+        <div className="app-shell">
+            <a href="#main-content" className="skip-link sr-only focus:not-sr-only">
                 Skip to main content
             </a>
-            <header className="border-b border-slate-200 bg-white shadow-[0_1px_2px_rgb(15_23_42/0.04)]">
+            <header className="app-header">
                 <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-3 px-3 py-3 sm:px-4 lg:px-6">
                     <div className="flex min-w-0 items-center gap-3">
-                        <span
-                            className="flex size-9 shrink-0 items-center justify-center rounded-md bg-blue-950 text-xs font-bold text-white"
-                            aria-hidden="true"
-                        >
+                        <span className="brand-mark" aria-hidden="true">
                             LV
                         </span>
                         <div className="min-w-0">
-                            <p className="text-sm font-semibold text-blue-950">LexVerdict</p>
-                            <p className="hidden text-xs text-slate-600 sm:block">
+                            <p className="text-sm font-bold text-white">LexVerdict</p>
+                            <p className="hidden text-xs text-slate-300 sm:block">
                                 Prosecutor Office Case Management
                             </p>
                         </div>
                     </div>
 
                     <div className="flex min-w-0 items-center gap-2 text-sm sm:gap-3">
-                        <div className="min-w-0 text-right">
-                            <p className="truncate font-medium">{user?.name ?? user?.username}</p>
-                            <p className="truncate text-xs text-slate-600">{user?.role_label}</p>
+                        <div className="min-w-0 text-right text-white">
+                            <p className="truncate font-semibold">{user?.name ?? user?.username}</p>
+                            <p className="truncate text-xs text-slate-300">{user?.role_label}</p>
                         </div>
                         <span className="sr-only" role="status" aria-live="polite">
                             {navigating ? 'Loading page' : ''}
@@ -92,7 +86,7 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
                         <button
                             type="button"
                             onClick={() => router.post('/logout')}
-                            className="min-h-11 shrink-0 rounded-md border border-slate-300 px-3 font-medium text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2"
+                            className="btn btn-header shrink-0 px-3"
                         >
                             Logout
                         </button>
@@ -100,13 +94,13 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
                 </div>
             </header>
 
-            <div className="mx-auto grid max-w-[1800px] min-w-0 gap-5 px-3 py-5 sm:px-4 md:grid-cols-[184px_minmax(0,1fr)] lg:gap-6 lg:px-6 lg:py-6">
+            <div className="mx-auto grid max-w-[1800px] min-w-0 gap-5 px-3 py-5 sm:px-4 md:grid-cols-[196px_minmax(0,1fr)] lg:gap-6 lg:px-6 lg:py-6">
                 <button
                     type="button"
                     aria-expanded={navigationOpen}
                     aria-controls="staff-navigation"
                     onClick={() => setNavigationOpen((open) => !open)}
-                    className="surface flex min-h-11 items-center justify-between px-4 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 md:hidden"
+                    className="navigation-toggle md:hidden"
                 >
                     <span>Navigation</span>
                     <span aria-hidden="true">{navigationOpen ? 'Close' : 'Open'}</span>
@@ -114,7 +108,7 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
                 <nav
                     id="staff-navigation"
                     aria-label="Staff navigation"
-                    className={`surface min-w-0 grid-cols-2 gap-1 p-1.5 sm:grid-cols-3 md:sticky md:top-5 md:block md:self-start ${navigationOpen ? 'grid' : 'hidden'}`}
+                    className={`app-nav min-w-0 grid-cols-2 gap-1 p-1.5 sm:grid-cols-3 md:sticky md:top-5 md:block md:self-start ${navigationOpen ? 'grid' : 'hidden'}`}
                 >
                     {navItems
                         .filter((item) => item.show)
@@ -124,7 +118,7 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
                                 href={item.href}
                                 onClick={() => setNavigationOpen(false)}
                                 aria-current={isActive(item.href) ? 'page' : undefined}
-                                className={`flex min-h-11 min-w-0 items-center justify-center rounded-md border-b-2 px-2.5 py-2 text-center text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-1 md:mb-0.5 md:w-full md:justify-start md:border-b-0 md:border-l-4 md:text-left ${isActive(item.href) ? 'border-blue-900 bg-blue-50 text-blue-950' : 'border-transparent text-slate-700 hover:bg-slate-100'}`}
+                                className="nav-link justify-center text-center md:mb-0.5 md:w-full md:justify-start md:text-left"
                             >
                                 {item.label}
                             </Link>

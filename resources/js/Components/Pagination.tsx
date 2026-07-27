@@ -28,7 +28,7 @@ export default function Pagination({
     if (links.length === 0) return null;
 
     return (
-        <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="pagination-shell">
             <p className="text-sm text-slate-600" aria-live="polite">
                 {total !== undefined
                     ? `Showing ${from ?? 0} to ${to ?? 0} of ${total}`
@@ -48,7 +48,7 @@ export default function Pagination({
                                     <Link
                                         href={link.url}
                                         aria-current={link.active ? 'page' : undefined}
-                                        className={`${responsiveClass} min-h-11 min-w-11 items-center justify-center rounded-md border px-3 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 ${link.active ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'}`}
+                                        className={`${responsiveClass} min-h-11 min-w-11 items-center justify-center rounded-md border px-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-institution-600 focus:ring-offset-2 ${link.active ? 'border-institution-900 bg-institution-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-institution-600 hover:bg-institution-50'}`}
                                     >
                                         {label}
                                     </Link>
