@@ -37,7 +37,12 @@ async function expectChartRendered(page: Page, testId: string) {
         .toBe(true);
 }
 
-async function expectLegacyCaseList(page: Page, processServer = false) {
+async function expectLegacyCaseList(
+    page: Page,
+    role: 'standard' | 'prosecutor' | 'processServer' = 'standard',
+) {
+    const processServer = role === 'processServer';
+    const prosecutor = role === 'prosecutor';
     await expect(
         page.getByRole('columnheader', {
             name: processServer ? 'Docket Number' : 'Docket No.',
@@ -54,23 +59,22 @@ async function expectLegacyCaseList(page: Page, processServer = false) {
         page.getByRole('columnheader', { name: 'Complainant', exact: true }),
     ).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Respondent', exact: true })).toBeVisible();
-    await expect(
-        page.getByRole('columnheader', { name: 'Police Station', exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Police Station', exact: true })).toHaveCount(
+        prosecutor ? 0 : 1,
+    );
     await expect(page.getByRole('columnheader', { name: 'Date', exact: true })).toBeVisible();
-    await expect(
-        page.getByRole('columnheader', {
-            name: processServer ? 'Assigned Prosecutor' : 'Prosecutor',
-            exact: true,
-        }),
-    ).toBeVisible();
+    await expect(page.getByRole('columnheader', {
+        name: processServer ? 'Assigned Prosecutor' : 'Prosecutor', exact: true,
+    })).toHaveCount(prosecutor ? 0 : 1);
     await expect(
         page.getByRole('columnheader', {
             name: processServer ? 'Resolution Verdict' : 'Verdict',
             exact: true,
         }),
     ).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Court', exact: true })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Court', exact: true })).toHaveCount(
+        prosecutor ? 0 : 1,
+    );
     await expect(page.getByLabel('Sort by')).toBeVisible();
     await expect(page.getByLabel('Order')).toBeVisible();
     await expect(page.getByLabel('Search', { exact: true })).toBeVisible();
@@ -79,6 +83,7 @@ async function expectLegacyCaseList(page: Page, processServer = false) {
 }
 
 test('each staff role receives only its approved navigation and route access', async ({ page }) => {
+    test.setTimeout(90_000);
     await login(page, 'e2e_admin', '/dashboard');
     await expect(page.getByRole('link', { name: 'Dashboard' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Reports' })).toBeVisible();
@@ -108,7 +113,12 @@ test('each staff role receives only its approved navigation and route access', a
     await page.getByLabel('Crime Name').fill(offenseName);
     await page.getByLabel('Law Reference').fill('E2E Law Reference');
     await page.getByRole('button', { name: 'Add Crime' }).click();
-    await expect(page.getByRole('cell', { name: offenseName, exact: true })).toBeVisible();
+    const offenseRow = page.getByRole('row').filter({ hasText: offenseName });
+    await expect(offenseRow).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Deactivate' })).toHaveCount(0);
+    page.once('dialog', (dialog) => dialog.accept());
+    await offenseRow.getByRole('button', { name: 'Delete' }).click();
+    await expect(offenseRow).toHaveCount(0);
     await logout(page);
 
     let response;
@@ -125,14 +135,25 @@ test('each staff role receives only its approved navigation and route access', a
     response = await page.goto('/dashboard');
     expect(response?.status()).toBe(403);
     await page.goto('/cases');
-    await expectLegacyCaseList(page);
-    await expect(
-        page.getByRole('columnheader', { name: 'Verdict Date', exact: true }),
-    ).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Command', exact: true })).toBeVisible();
+    await expectLegacyCaseList(page, 'prosecutor');
+    await expect(page.getByRole('columnheader', { name: 'Verdict Date', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('columnheader', { name: 'Actions', exact: true })).toBeVisible();
     const prosecutorCasesTable = page.getByRole('region', { name: 'Cases table' });
+    for (const width of [1280, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        expect(await prosecutorCasesTable.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    }
     await expect(prosecutorCasesTable.getByText('Due for Hearing', { exact: true })).toBeVisible();
     await expect(prosecutorCasesTable.getByText('Resolved', { exact: true })).toBeVisible();
+    await page.getByLabel('Search', { exact: true }).fill('Qualified');
+    await page.getByRole('button', { name: 'Search' }).click();
+    await expect(page).toHaveURL(/\/cases\?.*search=Qualified/);
+    const caseViewLink = page.getByRole('link', { name: 'View', exact: true }).first();
+    await expect(caseViewLink).toHaveAttribute('href', /^\/cases\/[0-9a-f-]+\?return_to=/);
+    await caseViewLink.click();
+    await expect(page).toHaveURL(/\/cases\/[0-9a-f-]+\?return_to=/);
+    await page.getByRole('link', { name: 'Back to Cases' }).click();
+    await expect(page).toHaveURL(/\/cases\?.*search=Qualified/);
     await logout(page);
 
     await login(page, 'e2e_secretary', '/cases');
@@ -151,18 +172,16 @@ test('each staff role receives only its approved navigation and route access', a
         'aria-current',
         'page',
     );
-    await expect(page.getByRole('link', { name: 'Subpoenas' })).toHaveAttribute(
-        'aria-current',
-        'page',
-    );
+    await expect(page.getByRole('heading', { name: 'Subpoenas', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Resolutions', exact: true })).toBeVisible();
     await expect(page.getByRole('cell', { name: 'Pending', exact: true })).toBeVisible();
-    await page.getByRole('link', { name: 'Resolutions' }).click();
-    await expect(page.getByRole('link', { name: 'Resolutions' })).toHaveAttribute(
-        'aria-current',
-        'page',
-    );
     await expect(page.getByRole('cell', { name: 'For Filing', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /Approve|Deny/ })).toHaveCount(0);
+    await page.goto('/secretary/verifying-cases?sub_page=2&res_page=2');
+    await page.getByLabel('Search', { exact: true }).first().fill('E2E');
+    await page.getByRole('button', { name: 'Apply' }).first().click();
+    await expect.poll(() => new URL(page.url()).searchParams.get('sub_page')).toBe('2');
+    await expect.poll(() => new URL(page.url()).searchParams.get('res_page')).toBe('2');
     response = await page.goto('/resolution-reviews');
     expect(response?.status()).toBe(403);
     response = await page.goto('/dashboard');
@@ -176,7 +195,7 @@ test('each staff role receives only its approved navigation and route access', a
     await expect(page.getByRole('link', { name: 'Reports' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Manage Crimes' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Verifying Cases' })).toHaveCount(0);
-    await expectLegacyCaseList(page, true);
+    await expectLegacyCaseList(page, 'processServer');
     await expect(
         page.getByRole('columnheader', { name: 'Verdict Date', exact: true }),
     ).toBeVisible();
@@ -296,9 +315,8 @@ test('public lookup and administrator report preserve approved behavior', async 
     await login(page, 'e2e_admin', '/dashboard');
     await page.getByRole('link', { name: 'Reports' }).click();
     await page.getByRole('button', { name: 'Generate' }).click();
-    await expect(
-        page.getByText('Select report filters and generate the Case Report.'),
-    ).toBeVisible();
+    await expect.poll(() => new URL(page.url()).searchParams.get('generate')).toBe('1');
+    await expect(page.getByRole('heading', { name: 'Case Summary' })).toBeVisible();
     await page.getByLabel('Case Status').selectOption('For Filing');
     await page.getByRole('button', { name: 'Generate' }).click();
     await expect.poll(() => new URL(page.url()).searchParams.get('verdict')).toBe('For Filing');

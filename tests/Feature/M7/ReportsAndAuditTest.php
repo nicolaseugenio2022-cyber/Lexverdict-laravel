@@ -75,6 +75,29 @@ class ReportsAndAuditTest extends TestCase
                 ->where('report.offense_distribution.0.count', 1));
     }
 
+    public function test_report_generation_without_dates_returns_all_and_lone_boundaries_follow_legacy_behavior(): void
+    {
+        [$admin, $prosecutor, $secretary] = $this->pairedStaff('m7_optional_dates');
+        $offense = Offense::factory()->create(['name' => 'Theft', 'normalized_name' => 'theft']);
+        $early = $this->reportCase($prosecutor->id, $secretary->id, '26A-0101', '2026-01-05', 'Station A', [$offense], [['Male', '1990-01-01']]);
+        $late = $this->reportCase($prosecutor->id, $secretary->id, '26G-0102', '2026-07-05', 'Station B', [$offense], [['Female', '1990-01-01']]);
+        Resolution::factory()->for($early, 'case')->approved()->create(['created_by_user_id' => $admin->id]);
+        Resolution::factory()->for($late, 'case')->approved()->create(['created_by_user_id' => $admin->id]);
+
+        $this->actingAs($admin)->get('/admin/reports')
+            ->assertInertia(fn (Assert $page) => $page->where('report', null));
+        $this->actingAs($admin)->get('/admin/reports?generate=1')
+            ->assertInertia(fn (Assert $page) => $page->where('report.total_cases', 2));
+
+        // The validated legacy query applies a date predicate only when both boundaries exist.
+        $this->actingAs($admin)->get('/admin/reports?generate=1&start_date=2026-06-01')
+            ->assertInertia(fn (Assert $page) => $page->where('report.total_cases', 2));
+        $this->actingAs($admin)->get('/admin/reports?generate=1&end_date=2026-02-01')
+            ->assertInertia(fn (Assert $page) => $page->where('report.total_cases', 2));
+        $this->actingAs($admin)->get('/admin/reports?generate=1&start_date=2026-06-01&end_date=2026-12-31')
+            ->assertInertia(fn (Assert $page) => $page->where('report.total_cases', 1));
+    }
+
     public function test_report_filters_use_or_for_case_types_and_same_party_for_demographics(): void
     {
         [$admin, $prosecutor, $secretary] = $this->pairedStaff('m7_filters');

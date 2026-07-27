@@ -19,8 +19,6 @@ class OffenseController extends Controller
     {
         $filters = $request->validated();
         $search = trim((string) ($filters['search'] ?? ''));
-        $status = (string) ($filters['status'] ?? '');
-
         $offenses = Offense::query()
             ->withCount('cases')
             ->when($search !== '', function ($query) use ($search): void {
@@ -29,9 +27,9 @@ class OffenseController extends Controller
                         ->orWhereRaw("COALESCE(law_reference, '') ILIKE ?", ["%{$search}%"]);
                 });
             })
-            ->when($status !== '', fn ($query) => $query->where('is_active', $status === 'active'))
-            ->orderBy('name')
-            ->paginate(15)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(10)
             ->withQueryString()
             ->through(fn (Offense $offense): array => $this->payload($offense));
 
@@ -39,8 +37,8 @@ class OffenseController extends Controller
             'offenses' => $offenses,
             'filters' => [
                 'search' => $search,
-                'status' => $status,
             ],
+            'catalog_notice' => 'Initial Revised Penal Code catalog. Validate with the responsible legal office before production use; special-law offenses may not be included.',
         ]);
     }
 
@@ -78,22 +76,16 @@ class OffenseController extends Controller
         return redirect()->back(fallback: route('admin.offenses.index'));
     }
 
-    public function deactivate(string $offenseId, ManageOffense $manager): RedirectResponse
+    public function destroy(string $offenseId, ManageOffense $manager): RedirectResponse
     {
         $offense = Offense::query()->findOrFail($offenseId);
-        $this->authorize('update', $offense);
+        $this->authorize('delete', $offense);
 
-        $manager->setActive($offense, false, request()->user());
-
-        return redirect()->back(fallback: route('admin.offenses.index'));
-    }
-
-    public function restore(string $offenseId, ManageOffense $manager): RedirectResponse
-    {
-        $offense = Offense::query()->findOrFail($offenseId);
-        $this->authorize('update', $offense);
-
-        $manager->setActive($offense, true, request()->user());
+        try {
+            $manager->delete($offense, request()->user());
+        } catch (CaseDataInvariantException $exception) {
+            return back()->withErrors(['delete_error' => $exception->getMessage()]);
+        }
 
         return redirect()->back(fallback: route('admin.offenses.index'));
     }

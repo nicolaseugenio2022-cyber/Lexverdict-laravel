@@ -22,4 +22,9 @@ class OffensePolicy
     {
         return $this->viewAny($user);
     }
+
+    public function delete(User $user, Offense $offense): bool
+    {
+        return $this->viewAny($user);
+    }
 }

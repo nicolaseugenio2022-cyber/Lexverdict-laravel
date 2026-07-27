@@ -18,6 +18,28 @@ class CaseListParityTest extends TestCase
     use CreatesStaffPairs;
     use RefreshDatabase;
 
+    public function test_case_view_preserves_only_authorized_internal_return_locations(): void
+    {
+        [$admin, $prosecutor, $secretary] = $this->pairedStaff('parity_return');
+        $case = LegalCase::factory()->create([
+            'assigned_prosecutor_id' => $prosecutor->id,
+            'created_by_user_id' => $secretary->id,
+        ]);
+
+        $casesReturn = '/cases?search=III-09&sort=docket_number&order=asc&page=2';
+        $this->actingAs($admin)->get('/cases/'.$case->id.'?return_to='.urlencode($casesReturn))
+            ->assertInertia(fn (Assert $page) => $page->where('back_url', $casesReturn));
+
+        $verificationReturn = '/secretary/verifying-cases?sub_search=III-09&res_sort=verdict';
+        $this->actingAs($secretary)->get('/cases/'.$case->id.'?return_to='.urlencode($verificationReturn))
+            ->assertInertia(fn (Assert $page) => $page->where('back_url', $verificationReturn));
+
+        foreach (['https://example.com', '//example.com', '/admin/users', '/secretary/verifying-cases'] as $unsafe) {
+            $this->actingAs($admin)->get('/cases/'.$case->id.'?return_to='.urlencode($unsafe))
+                ->assertInertia(fn (Assert $page) => $page->where('back_url', '/cases'));
+        }
+    }
+
     public function test_each_role_receives_the_approved_legacy_projection_and_scope(): void
     {
         [$admin, $prosecutor, $secretary] = $this->pairedStaff('parity_primary');

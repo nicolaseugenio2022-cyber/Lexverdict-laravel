@@ -29,5 +29,7 @@ class DatabaseSeeder extends Seeder
             'first_name' => 'System',
             'last_name' => 'Administrator',
         ]);
+
+        $this->call(PhilippineRevisedPenalCodeSeeder::class);
     }
 }

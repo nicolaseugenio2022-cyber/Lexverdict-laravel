@@ -32,29 +32,35 @@ class SecretaryVerificationController extends Controller
         $secretary = $request->user();
         $secretary->loadMissing('secretaryAssignment');
         $validated = $request->validated();
-        $tab = (string) ($validated['tab'] ?? 'subpoenas');
-        $filters = [
-            'search' => trim((string) ($validated['search'] ?? '')),
-            'status' => (string) ($validated['status'] ?? ''),
-            'sort' => (string) ($validated['sort'] ?? ($tab === 'resolutions' ? 'docket_number' : 'date')),
-            'direction' => (string) ($validated['direction'] ?? 'desc'),
+        $subpoenaFilters = [
+            'search' => trim((string) ($validated['sub_search'] ?? '')),
+            'status' => (string) ($validated['sub_status'] ?? ''),
+            'sort' => (string) ($validated['sub_sort'] ?? 'date'),
+            'direction' => (string) ($validated['sub_direction'] ?? 'desc'),
+        ];
+        $resolutionFilters = [
+            'search' => trim((string) ($validated['res_search'] ?? '')),
+            'status' => (string) ($validated['res_status'] ?? ''),
+            'sort' => (string) ($validated['res_sort'] ?? 'docket_number'),
+            'direction' => (string) ($validated['res_direction'] ?? 'desc'),
         ];
 
-        if ($tab === 'resolutions') {
-            $items = $query->resolutions($secretary, $filters)
-                ->through(fn (LegalCase $case): array => $this->resolutionRow($case, $secretary, $resolutionAccess));
-        } else {
-            $items = $query->subpoenas($secretary, $filters)
-                ->through(fn (LegalCase $case): array => $this->subpoenaRow($case, $secretary, $caseAccess, $documentAccess));
-        }
+        $subpoenas = $query->subpoenas($secretary, $subpoenaFilters)
+            ->through(fn (LegalCase $case): array => $this->subpoenaRow($case, $secretary, $caseAccess, $documentAccess));
+        $resolutions = $query->resolutions($secretary, $resolutionFilters)
+            ->through(fn (LegalCase $case): array => $this->resolutionRow($case, $secretary, $resolutionAccess));
 
         return Inertia::render('Secretary/Verification/Index', [
-            'tab' => $tab,
-            'filters' => $filters,
-            'items' => $items,
-            'statuses' => $tab === 'resolutions'
-                ? ResolutionStatus::values()
-                : [SubpoenaStatus::Pending->value, SubpoenaStatus::Approved->value, SubpoenaStatus::Denied->value],
+            'subpoenas' => $subpoenas,
+            'resolutions' => $resolutions,
+            'filters' => [
+                'subpoenas' => $subpoenaFilters,
+                'resolutions' => $resolutionFilters,
+            ],
+            'statuses' => [
+                'subpoenas' => [SubpoenaStatus::Pending->value, SubpoenaStatus::Approved->value, SubpoenaStatus::Denied->value],
+                'resolutions' => ResolutionStatus::values(),
+            ],
         ]);
     }
 

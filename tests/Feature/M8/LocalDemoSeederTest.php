@@ -95,14 +95,11 @@ class LocalDemoSeederTest extends TestCase
                 ->has('cases.data', 6));
 
         $this->actingAs($secretary)
-            ->get('/secretary/verifying-cases?tab=subpoenas')
+            ->get('/secretary/verifying-cases')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('items.total', 6));
-        $this->get('/secretary/verifying-cases?tab=resolutions')
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('items.total', 4));
+                ->where('subpoenas.total', 6)
+                ->where('resolutions.total', 4));
 
         $this->post('/docket', [
             'docket' => 'III-09-INV-26G-0001',

@@ -62,8 +62,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             Route::get('offenses', [OffenseController::class, 'index'])->name('offenses.index');
             Route::post('offenses', [OffenseController::class, 'store'])->name('offenses.store');
             Route::patch('offenses/{offenseId}', [OffenseController::class, 'update'])->name('offenses.update');
-            Route::patch('offenses/{offenseId}/deactivate', [OffenseController::class, 'deactivate'])->name('offenses.deactivate');
-            Route::patch('offenses/{offenseId}/restore', [OffenseController::class, 'restore'])->name('offenses.restore');
+            Route::delete('offenses/{offenseId}', [OffenseController::class, 'destroy'])->name('offenses.destroy');
         });
 
         Route::resource('users', UserController::class)->except(['show', 'destroy']);

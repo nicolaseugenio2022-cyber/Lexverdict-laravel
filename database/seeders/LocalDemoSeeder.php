@@ -139,6 +139,8 @@ class LocalDemoSeeder extends Seeder
                 1,
                 'Resolution details require revision before approval.',
             );
+
+            $this->call(PhilippineRevisedPenalCodeSeeder::class);
         });
 
         $this->command?->info('Local demo accounts and representative workflow data created.');

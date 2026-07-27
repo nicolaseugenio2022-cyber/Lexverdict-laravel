@@ -26,7 +26,9 @@ class ReportController extends Controller
     public function index(ReportRequest $request): InertiaResponse
     {
         $filters = ReportFilters::from($request->validated());
-        $report = $filters->hasAny() ? $this->reports->run($filters) : null;
+        $report = ($request->boolean('generate') || $filters->hasAny())
+            ? $this->reports->run($filters)
+            : null;
         if ($report !== null) {
             unset($report['rows']);
         }

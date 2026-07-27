@@ -126,6 +126,7 @@ class CaseController extends Controller
                 'sha256' => $document->sha256,
             ])->values()->all() : [],
             'can_generate_subpoena' => $canGenerateDocument,
+            'back_url' => $this->caseListReturnUrl($request),
         ]);
     }
 
@@ -316,6 +317,47 @@ class CaseController extends Controller
             $user->hasRole(StaffRole::Prosecutor) => 'prosecutor',
             default => 'process_server',
         };
+    }
+
+    private function caseListReturnUrl(Request $request): string
+    {
+        $fallback = route('cases.index', absolute: false);
+        $candidate = $request->query('return_to');
+
+        if (! is_string($candidate) || $candidate === '' || str_starts_with($candidate, '//')) {
+            return $fallback;
+        }
+
+        if (preg_match('/[\x00-\x1F\\\\]/', $candidate) === 1) {
+            return $fallback;
+        }
+
+        $parts = parse_url($candidate);
+        if ($parts === false || isset($parts['scheme']) || isset($parts['host']) || isset($parts['user']) || isset($parts['port'])) {
+            return $fallback;
+        }
+
+        $path = (string) ($parts['path'] ?? '');
+        $allowedKeys = match (true) {
+            $path === $fallback => ['search', 'filter', 'sort', 'order', 'page'],
+            $request->user()->hasRole(StaffRole::Secretary)
+                && $path === route('secretary.verification.index', absolute: false) => [
+                    'sub_search', 'sub_status', 'sub_sort', 'sub_direction', 'sub_page',
+                    'res_search', 'res_status', 'res_sort', 'res_direction', 'res_page',
+                ],
+            default => null,
+        };
+        if ($allowedKeys === null) {
+            return $fallback;
+        }
+
+        parse_str((string) ($parts['query'] ?? ''), $query);
+        $allowed = array_filter(
+            array_intersect_key($query, array_flip($allowedKeys)),
+            fn (mixed $value): bool => is_string($value) && strlen($value) <= 255,
+        );
+
+        return $allowed === [] ? $path : $path.'?'.http_build_query($allowed);
     }
 
     private function caseListCommandStatus(User $user, ?string $resolutionStatus, ?string $resolutionVerdict): ?string

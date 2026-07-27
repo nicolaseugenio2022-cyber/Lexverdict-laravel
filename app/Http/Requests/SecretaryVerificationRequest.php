@@ -22,19 +22,17 @@ class SecretaryVerificationRequest extends FormRequest
     /** @return array<string, list<mixed>> */
     public function rules(): array
     {
-        $isResolutionTab = $this->input('tab', 'subpoenas') === 'resolutions';
-
         return [
-            'tab' => ['nullable', Rule::in(['subpoenas', 'resolutions'])],
-            'search' => ['nullable', 'string', 'max:255'],
-            'status' => ['nullable', Rule::in($isResolutionTab
-                ? ResolutionStatus::values()
-                : array_column(SubpoenaStatus::cases(), 'value'))],
-            'sort' => ['nullable', Rule::in($isResolutionTab
-                ? ['docket_number', 'status', 'revision', 'verdict']
-                : ['docket_number', 'date', 'status', 'revision'])],
-            'direction' => ['nullable', Rule::in(['asc', 'desc'])],
-            'page' => ['nullable', 'integer', 'min:1'],
+            'sub_search' => ['nullable', 'string', 'max:255'],
+            'sub_status' => ['nullable', Rule::in(array_column(SubpoenaStatus::cases(), 'value'))],
+            'sub_sort' => ['nullable', Rule::in(['docket_number', 'date', 'status', 'revision'])],
+            'sub_direction' => ['nullable', Rule::in(['asc', 'desc'])],
+            'sub_page' => ['nullable', 'integer', 'min:1'],
+            'res_search' => ['nullable', 'string', 'max:255'],
+            'res_status' => ['nullable', Rule::in(ResolutionStatus::values())],
+            'res_sort' => ['nullable', Rule::in(['docket_number', 'status', 'revision', 'verdict'])],
+            'res_direction' => ['nullable', Rule::in(['asc', 'desc'])],
+            'res_page' => ['nullable', 'integer', 'min:1'],
         ];
     }
 }

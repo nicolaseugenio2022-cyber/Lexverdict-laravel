@@ -222,6 +222,7 @@ export default function Index({ report, filters, offenses, stations, export_quer
                     action="/admin/reports"
                     className="surface grid gap-4 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4"
                 >
+                    <input type="hidden" name="generate" value="1" />
                     <label className="text-sm font-medium">
                         Date From
                         <input

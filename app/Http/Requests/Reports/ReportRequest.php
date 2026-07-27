@@ -17,6 +17,7 @@ class ReportRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'generate' => ['nullable', 'boolean'],
             'start_date' => ['nullable', 'date_format:Y-m-d'],
             'end_date' => ['nullable', 'date_format:Y-m-d'],
             'verdict' => ['nullable', Rule::in(ResolutionVerdict::submittableValues())],

@@ -64,6 +64,9 @@ class ManageOffense
                 'name' => trim($name),
                 'normalized_name' => $normalizedName,
                 'law_reference' => $lawReference ? trim($lawReference) : null,
+                'canonical_key' => null,
+                'source_url' => null,
+                'source_note' => null,
             ]);
 
             $this->audit->record('offense.updated', $actor, Offense::class, $offense->id, [
@@ -76,30 +79,24 @@ class ManageOffense
         });
     }
 
-    public function setActive(Offense $offense, bool $isActive, User $actor): Offense
+    public function delete(Offense $offense, User $actor): void
     {
-        return DB::transaction(function () use ($offense, $isActive, $actor): Offense {
+        DB::transaction(function () use ($offense, $actor): void {
             $offense = Offense::query()->lockForUpdate()->findOrFail($offense->id);
 
-            if ($offense->is_active === $isActive) {
-                return $offense;
+            if ($offense->cases()->exists()) {
+                throw new CaseDataInvariantException(
+                    'This Crime cannot be deleted because it is already referenced by a Case.',
+                );
             }
 
-            $offense->update(['is_active' => $isActive]);
+            $this->audit->record('offense.deleted', $actor, Offense::class, $offense->id, [
+                'name' => $offense->name,
+                'law_reference' => $offense->law_reference,
+                'canonical_key' => $offense->canonical_key,
+            ]);
 
-            $this->audit->record(
-                $isActive ? 'offense.restored' : 'offense.deactivated',
-                $actor,
-                Offense::class,
-                $offense->id,
-                [
-                    'name' => $offense->name,
-                    'law_reference' => $offense->law_reference,
-                    'is_active' => $offense->is_active,
-                ],
-            );
-
-            return $offense;
+            $offense->delete();
         });
     }
 

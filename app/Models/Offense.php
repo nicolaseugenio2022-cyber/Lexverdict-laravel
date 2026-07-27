@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use LogicException;
 
 class Offense extends Model
 {
@@ -26,6 +25,9 @@ class Offense extends Model
         'normalized_name',
         'law_reference',
         'is_active',
+        'canonical_key',
+        'source_url',
+        'source_note',
     ];
 
     /**
@@ -36,11 +38,6 @@ class Offense extends Model
         return [
             'is_active' => 'boolean',
         ];
-    }
-
-    protected static function booted(): void
-    {
-        static::deleting(fn (): never => throw new LogicException('Crime catalog records must be deactivated, not deleted.'));
     }
 
     /**

@@ -33,7 +33,8 @@ class SecretaryVerificationWorkspaceTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Secretary/Verification/Index')
-                ->where('tab', 'subpoenas')
+                ->has('subpoenas')
+                ->has('resolutions')
                 ->where('auth.can.view_secretary_verification', true));
 
         foreach ([$admin, $prosecutor, $processServer] as $user) {
@@ -43,24 +44,26 @@ class SecretaryVerificationWorkspaceTest extends TestCase
         $unassignedSecretary = $this->staff(StaffRole::Secretary, 'verification_unassigned');
         $this->actingAs($unassignedSecretary)->get('/secretary/verifying-cases')
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->where('items.total', 0));
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('subpoenas.total', 0)
+                ->where('resolutions.total', 0));
 
         $inactiveSecretary = $this->staff(StaffRole::Secretary, 'verification_inactive');
         $inactiveSecretary->forceFill(['is_active' => false])->save();
         $this->actingAs($inactiveSecretary)->get('/secretary/verifying-cases')->assertRedirect('/login');
 
         $this->actingAs($secretary)
-            ->get('/secretary/verifying-cases?tab=subpoenas&status=Invented&sort=unknown')
-            ->assertSessionHasErrors(['status', 'sort']);
+            ->get('/secretary/verifying-cases?sub_status=Invented&sub_sort=unknown')
+            ->assertSessionHasErrors(['sub_status', 'sub_sort']);
         $this->actingAs($secretary)
-            ->get('/secretary/verifying-cases?tab=subpoenas&sort=verdict')
-            ->assertSessionHasErrors('sort');
+            ->get('/secretary/verifying-cases?sub_sort=verdict')
+            ->assertSessionHasErrors('sub_sort');
         $this->actingAs($secretary)
-            ->get('/secretary/verifying-cases?tab=resolutions&sort=date')
-            ->assertSessionHasErrors('sort');
+            ->get('/secretary/verifying-cases?res_sort=date')
+            ->assertSessionHasErrors('res_sort');
     }
 
-    public function test_subpoena_tab_preserves_statuses_denial_feedback_scope_actions_search_sort_and_pagination(): void
+    public function test_subpoena_section_preserves_statuses_denial_feedback_scope_actions_search_sort_and_pagination(): void
     {
         [$admin, $prosecutor, $secretary] = $this->pairedStaff('verification_subpoenas');
         [, $otherProsecutor, $otherSecretary] = $this->pairedStaff('verification_other');
@@ -80,52 +83,52 @@ class SecretaryVerificationWorkspaceTest extends TestCase
             [$approved, SubpoenaStatus::Approved->value],
             [$denied, SubpoenaStatus::Denied->value],
         ] as [$case, $status]) {
-            $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=subpoenas&search='.urlencode($case->docket_number).'&status='.$status.'&sort=revision&direction=desc')
+            $this->actingAs($secretary)->get('/secretary/verifying-cases?sub_search='.urlencode($case->docket_number).'&sub_status='.$status.'&sub_sort=revision&sub_direction=desc')
                 ->assertOk()
                 ->assertInertia(fn (Assert $page) => $page
-                    ->has('items.data', 1)
-                    ->where('items.data.0.case_id', $case->id)
-                    ->where('items.data.0.subpoena_status', $status)
-                    ->where('items.data.0.assigned_prosecutor', $prosecutor->staffProfile?->displayName()));
+                    ->has('subpoenas.data', 1)
+                    ->where('subpoenas.data.0.case_id', $case->id)
+                    ->where('subpoenas.data.0.subpoena_status', $status)
+                    ->where('subpoenas.data.0.assigned_prosecutor', $prosecutor->staffProfile?->displayName()));
         }
 
-        $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=subpoenas&search='.urlencode($denied->docket_number))
+        $this->actingAs($secretary)->get('/secretary/verifying-cases?sub_search='.urlencode($denied->docket_number))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('items.data.0.denial_reason', 'Correct the witness address.')
-                ->where('items.data.0.workflow_label', 'Revision required')
-                ->where('items.data.0.can_revise', true));
+                ->where('subpoenas.data.0.denial_reason', 'Correct the witness address.')
+                ->where('subpoenas.data.0.workflow_label', 'Revision required')
+                ->where('subpoenas.data.0.can_revise', true));
 
-        $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=subpoenas&search='.urlencode($approved->docket_number))
+        $this->actingAs($secretary)->get('/secretary/verifying-cases?sub_search='.urlencode($approved->docket_number))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('items.data.0.subpoena_status', 'Approved')
-                ->where('items.data.0.can_generate_pdf', true));
+                ->where('subpoenas.data.0.subpoena_status', 'Approved')
+                ->where('subpoenas.data.0.can_generate_pdf', true));
 
-        $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=subpoenas&search='.urlencode($crossPair->docket_number))
-            ->assertInertia(fn (Assert $page) => $page->has('items.data', 0));
-        $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=subpoenas&search='.urlencode($crossPairDenied->docket_number))
-            ->assertInertia(fn (Assert $page) => $page->has('items.data', 0));
+        $this->actingAs($secretary)->get('/secretary/verifying-cases?sub_search='.urlencode($crossPair->docket_number))
+            ->assertInertia(fn (Assert $page) => $page->has('subpoenas.data', 0));
+        $this->actingAs($secretary)->get('/secretary/verifying-cases?sub_search='.urlencode($crossPairDenied->docket_number))
+            ->assertInertia(fn (Assert $page) => $page->has('subpoenas.data', 0));
 
-        $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=subpoenas&sort=date&direction=asc')
+        $this->actingAs($secretary)->get('/secretary/verifying-cases?sub_sort=date&sub_direction=asc')
             ->assertInertia(fn (Assert $page) => $page
-                ->where('items.data.0.case_id', $pending->id)
-                ->where('items.data.1.case_id', $approved->id)
-                ->where('items.data.2.case_id', $denied->id));
+                ->where('subpoenas.data.0.case_id', $pending->id)
+                ->where('subpoenas.data.1.case_id', $approved->id)
+                ->where('subpoenas.data.2.case_id', $denied->id));
 
         for ($number = 5; $number <= 15; $number++) {
             $this->case($secretary, $offense, $number, "Page {$number}");
         }
         DB::flushQueryLog();
         DB::enableQueryLog();
-        $response = $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=subpoenas&status=Pending&sort=docket_number&direction=asc');
+        $response = $this->actingAs($secretary)->get('/secretary/verifying-cases?sub_status=Pending&sub_sort=docket_number&sub_direction=asc');
         $queryCount = count(DB::getQueryLog());
         DB::disableQueryLog();
 
         $response->assertInertia(fn (Assert $page) => $page
-            ->where('filters.status', 'Pending')
-            ->where('filters.sort', 'docket_number')
-            ->where('items.current_page', 1)
-            ->where('items.total', 12));
-        $this->assertLessThanOrEqual(15, $queryCount, 'Verification query count must remain page-size independent.');
+            ->where('filters.subpoenas.status', 'Pending')
+            ->where('filters.subpoenas.sort', 'docket_number')
+            ->where('subpoenas.current_page', 1)
+            ->where('subpoenas.total', 12));
+        $this->assertLessThanOrEqual(25, $queryCount, 'Both legacy verification sections must remain page-size independent.');
 
         $this->actingAs($secretary)->post("/subpoena-reviews/{$pending->id}/approve", ['revision_number' => 1])->assertForbidden();
         $this->actingAs($secretary)->post("/subpoena-reviews/{$pending->id}/deny", ['revision_number' => 1, 'comment' => 'Unauthorized'])->assertForbidden();
@@ -134,7 +137,7 @@ class SecretaryVerificationWorkspaceTest extends TestCase
         $this->actingAs($secretary)->post("/cases/{$crossPair->id}/documents/subpoena")->assertForbidden();
     }
 
-    public function test_resolution_tab_preserves_distinct_verdict_status_denials_scope_and_valid_actions(): void
+    public function test_resolution_section_preserves_distinct_verdict_status_denials_scope_and_valid_actions(): void
     {
         [$admin, $prosecutor, $secretary] = $this->pairedStaff('verification_resolutions');
         [, $otherProsecutor, $otherSecretary] = $this->pairedStaff('verification_resolutions_other');
@@ -155,34 +158,34 @@ class SecretaryVerificationWorkspaceTest extends TestCase
             [$denied, ResolutionStatus::Denied->value, true],
             [$approved, ResolutionStatus::Approved->value, false],
         ] as [$resolution, $status, $canRevise]) {
-            $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=resolutions&search='.urlencode($resolution->case->docket_number).'&status='.$status.'&sort=verdict&direction=asc')
+            $this->actingAs($secretary)->get('/secretary/verifying-cases?res_search='.urlencode($resolution->case->docket_number).'&res_status='.$status.'&res_sort=verdict&res_direction=asc')
                 ->assertOk()
                 ->assertInertia(fn (Assert $page) => $page
-                    ->has('items.data', 1)
-                    ->where('items.data.0.resolution_id', $resolution->id)
-                    ->where('items.data.0.resolution_status', $status)
-                    ->where('items.data.0.resolution_verdict', $resolution->getRawOriginal('verdict'))
-                    ->where('items.data.0.can_revise', $canRevise));
+                    ->has('resolutions.data', 1)
+                    ->where('resolutions.data.0.resolution_id', $resolution->id)
+                    ->where('resolutions.data.0.resolution_status', $status)
+                    ->where('resolutions.data.0.resolution_verdict', $resolution->getRawOriginal('verdict'))
+                    ->where('resolutions.data.0.can_revise', $canRevise));
         }
 
-        $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=resolutions&search='.urlencode($notSubmitted->docket_number))
+        $this->actingAs($secretary)->get('/secretary/verifying-cases?res_search='.urlencode($notSubmitted->docket_number))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('items.data.0.resolution_status', null)
-                ->where('items.data.0.resolution_verdict', null)
-                ->where('items.data.0.workflow_label', 'Submission required')
-                ->where('items.data.0.can_submit', true));
+                ->where('resolutions.data.0.resolution_status', null)
+                ->where('resolutions.data.0.resolution_verdict', null)
+                ->where('resolutions.data.0.workflow_label', 'Submission required')
+                ->where('resolutions.data.0.can_submit', true));
 
-        $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=resolutions&search='.urlencode($denied->case->docket_number))
+        $this->actingAs($secretary)->get('/secretary/verifying-cases?res_search='.urlencode($denied->case->docket_number))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('items.data.0.denial_reason', 'Revise the Resolution analysis.')
-                ->where('items.data.0.submitted_by', $secretary->staffProfile?->displayName()));
+                ->where('resolutions.data.0.denial_reason', 'Revise the Resolution analysis.')
+                ->where('resolutions.data.0.submitted_by', $secretary->staffProfile?->displayName()));
 
-        $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=resolutions&search='.urlencode($crossPair->docket_number))
-            ->assertInertia(fn (Assert $page) => $page->has('items.data', 0));
+        $this->actingAs($secretary)->get('/secretary/verifying-cases?res_search='.urlencode($crossPair->docket_number))
+            ->assertInertia(fn (Assert $page) => $page->has('resolutions.data', 0));
 
-        $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=resolutions&sort=docket_number&direction=desc')
+        $this->actingAs($secretary)->get('/secretary/verifying-cases?res_sort=docket_number&res_direction=desc')
             ->assertInertia(fn (Assert $page) => $page
-                ->where('items.data.0.case_id', $approved->case_id));
+                ->where('resolutions.data.0.case_id', $approved->case_id));
 
         for ($number = 21; $number <= 26; $number++) {
             if ($number % 2 === 0) {
@@ -194,15 +197,15 @@ class SecretaryVerificationWorkspaceTest extends TestCase
 
         DB::flushQueryLog();
         DB::enableQueryLog();
-        $response = $this->actingAs($secretary)->get('/secretary/verifying-cases?tab=resolutions&sort=docket_number&direction=asc');
+        $response = $this->actingAs($secretary)->get('/secretary/verifying-cases?res_sort=docket_number&res_direction=asc');
         $queryCount = count(DB::getQueryLog());
         DB::disableQueryLog();
 
         $response->assertInertia(fn (Assert $page) => $page
-            ->where('items.current_page', 1)
-            ->where('items.total', 10)
-            ->has('items.data', 10));
-        $this->assertLessThanOrEqual(15, $queryCount, 'Resolution verification query count must remain page-size independent.');
+            ->where('resolutions.current_page', 1)
+            ->where('resolutions.total', 10)
+            ->has('resolutions.data', 10));
+        $this->assertLessThanOrEqual(25, $queryCount, 'Both legacy verification sections must remain page-size independent.');
 
         $this->actingAs($secretary)->post("/resolution-reviews/{$pending->id}/approve", ['revision_number' => 1])->assertForbidden();
         $this->actingAs($secretary)->post("/resolution-reviews/{$pending->id}/deny", ['revision_number' => 1, 'comment' => 'Unauthorized'])->assertForbidden();

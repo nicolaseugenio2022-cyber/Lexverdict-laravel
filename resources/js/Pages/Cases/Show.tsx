@@ -46,6 +46,7 @@ type Props = {
         sha256: string | null;
     }>;
     can_generate_subpoena: boolean;
+    back_url: string;
 };
 
 export default function Show({
@@ -59,6 +60,7 @@ export default function Show({
     can_revise_resolution,
     documents,
     can_generate_subpoena,
+    back_url,
 }: Props) {
     const [generating, setGenerating] = useState(false);
     const hasPendingDocument = documents.some(
@@ -125,7 +127,7 @@ export default function Show({
                     actions={
                         <>
                             <Link
-                                href="/cases"
+                                href={back_url}
                                 className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900"
                             >
                                 Back to Cases

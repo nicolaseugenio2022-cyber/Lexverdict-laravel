@@ -38,7 +38,7 @@ class SecretaryVerificationQuery
         return $query
             ->orderBy($column, $filters['direction'])
             ->orderBy('docket_number')
-            ->paginate(10)
+            ->paginate(10, pageName: 'sub_page')
             ->withQueryString();
     }
 
@@ -71,7 +71,7 @@ class SecretaryVerificationQuery
             $query->orderBy('docket_number', $direction);
         }
 
-        return $query->paginate(10)->withQueryString();
+        return $query->paginate(10, pageName: 'res_page')->withQueryString();
     }
 
     /** @return Builder<LegalCase> */

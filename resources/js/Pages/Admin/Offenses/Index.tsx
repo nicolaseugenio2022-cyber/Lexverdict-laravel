@@ -8,7 +8,6 @@ type Offense = {
     id: string;
     name: string;
     law_reference: string | null;
-    is_active: boolean;
     cases_count: number;
 };
 
@@ -20,21 +19,28 @@ type Props = {
         to: number | null;
         total: number;
     };
-    filters: { search: string; status: string };
+    filters: { search: string };
+    catalog_notice: string;
 };
 
-export default function Index({ offenses, filters }: Props) {
+export default function Index({ offenses, filters, catalog_notice }: Props) {
     const [search, setSearch] = useState(filters.search);
-    const [status, setStatus] = useState(filters.status);
     const [selected, setSelected] = useState<Offense | null>(null);
-    const { data, setData, post, patch, processing, errors, reset, clearErrors } = useForm({
-        name: '',
-        law_reference: '',
-    });
+    const {
+        data,
+        setData,
+        post,
+        patch,
+        delete: destroy,
+        processing,
+        errors,
+        reset,
+        clearErrors,
+    } = useForm({ name: '', law_reference: '', delete_error: '' });
 
     function filter(event: FormEvent) {
         event.preventDefault();
-        router.get('/admin/offenses', { search, status }, { preserveState: true });
+        router.get('/admin/offenses', { search }, { preserveState: true });
     }
 
     function save(event: FormEvent) {
@@ -54,7 +60,7 @@ export default function Index({ offenses, filters }: Props) {
 
     function edit(offense: Offense) {
         setSelected(offense);
-        setData({ name: offense.name, law_reference: offense.law_reference ?? '' });
+        setData({ name: offense.name, law_reference: offense.law_reference ?? '', delete_error: '' });
         clearErrors();
         document.getElementById('crime-name')?.focus();
     }
@@ -65,9 +71,16 @@ export default function Index({ offenses, filters }: Props) {
         clearErrors();
     }
 
-    function changeState(offense: Offense) {
-        const action = offense.is_active ? 'deactivate' : 'restore';
-        router.patch(`/admin/offenses/${offense.id}/${action}`, {}, { preserveScroll: true });
+    function deleteOffense(offense: Offense) {
+        if (offense.cases_count > 0) return;
+        if (!window.confirm(`Delete ${offense.name}? This action cannot be undone.`)) return;
+
+        destroy(`/admin/offenses/${offense.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                if (selected?.id === offense.id) clearSelection();
+            },
+        });
     }
 
     return (
@@ -82,6 +95,10 @@ export default function Index({ offenses, filters }: Props) {
                         Crime catalog and Law Reference records.
                     </p>
                 </div>
+
+                <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                    {catalog_notice}
+                </p>
 
                 <div className="grid min-w-0 gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
                     <form
@@ -155,7 +172,7 @@ export default function Index({ offenses, filters }: Props) {
                     <div className="min-w-0 rounded-md border border-slate-200 bg-white">
                         <form
                             onSubmit={filter}
-                            className="grid gap-3 border-b border-slate-200 p-4 md:grid-cols-[minmax(220px,1fr)_160px_auto]"
+                            className="grid gap-3 border-b border-slate-200 p-4 md:grid-cols-[minmax(220px,1fr)_auto]"
                         >
                             <label className="text-sm font-medium text-slate-700">
                                 Search
@@ -165,18 +182,6 @@ export default function Index({ offenses, filters }: Props) {
                                     onChange={(event) => setSearch(event.target.value)}
                                 />
                             </label>
-                            <label className="text-sm font-medium text-slate-700">
-                                Status
-                                <select
-                                    className="input mt-2"
-                                    value={status}
-                                    onChange={(event) => setStatus(event.target.value)}
-                                >
-                                    <option value="">All</option>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </label>
                             <button
                                 type="submit"
                                 className="min-h-11 self-end rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2"
@@ -185,19 +190,24 @@ export default function Index({ offenses, filters }: Props) {
                             </button>
                         </form>
 
+                        {errors.delete_error && (
+                            <p role="alert" className="border-b border-red-200 bg-red-50 p-4 text-sm text-red-900">
+                                {errors.delete_error}
+                            </p>
+                        )}
+
                         <div
                             className="table-scroll"
                             tabIndex={0}
                             role="region"
                             aria-label="Crime catalog table"
                         >
-                            <table className="min-w-[760px] w-full text-left text-sm">
+                            <table className="min-w-[640px] w-full text-left text-sm">
                                 <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                                     <tr>
                                         <th className="px-4 py-3 font-semibold">Crime</th>
                                         <th className="px-4 py-3 font-semibold">Law Reference</th>
                                         <th className="px-4 py-3 font-semibold">Cases</th>
-                                        <th className="px-4 py-3 font-semibold">Status</th>
                                         <th className="px-4 py-3 font-semibold">Actions</th>
                                     </tr>
                                 </thead>
@@ -215,14 +225,7 @@ export default function Index({ offenses, filters }: Props) {
                                             </td>
                                             <td className="px-4 py-3">{offense.cases_count}</td>
                                             <td className="px-4 py-3">
-                                                <span
-                                                    className={`inline-flex rounded px-2 py-1 text-xs font-semibold ${offense.is_active ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}
-                                                >
-                                                    {offense.is_active ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex min-w-max gap-3">
+                                                <div className="flex min-w-max items-start gap-3">
                                                     <button
                                                         type="button"
                                                         onClick={() => edit(offense)}
@@ -232,21 +235,26 @@ export default function Index({ offenses, filters }: Props) {
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => changeState(offense)}
-                                                        className={`font-semibold focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 ${offense.is_active ? 'text-red-700' : 'text-blue-900'}`}
+                                                        onClick={() => deleteOffense(offense)}
+                                                        disabled={offense.cases_count > 0 || processing}
+                                                        aria-describedby={offense.cases_count > 0 ? `crime-delete-${offense.id}` : undefined}
+                                                        className="font-semibold text-red-700 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:text-slate-400"
                                                     >
-                                                        {offense.is_active
-                                                            ? 'Deactivate'
-                                                            : 'Restore'}
+                                                        Delete
                                                     </button>
                                                 </div>
+                                                {offense.cases_count > 0 && (
+                                                    <p id={`crime-delete-${offense.id}`} className="mt-1 max-w-52 text-xs text-slate-600">
+                                                        Referenced Crimes cannot be deleted.
+                                                    </p>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
                                     {offenses.data.length === 0 && (
                                         <tr>
                                             <td
-                                                colSpan={5}
+                                                colSpan={4}
                                                 className="px-4 py-8 text-center text-slate-600"
                                             >
                                                 No crimes found.
