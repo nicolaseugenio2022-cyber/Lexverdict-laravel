@@ -25,6 +25,7 @@ The initial catalog uses only Supreme Court E-Library publications of Act No. 38
 - Security review: no findings; Administrator authorization, report scope, referential integrity, audit atomicity, and safe return navigation were confirmed. Residual database-administrator access remains an operational credential-control concern.
 - Code review corrections: removed unresolved catalog notes from automatic import, added source-specific amendment/repeal handling, added Article 122 and Article 167 current entries, added alias/conflict reporting, detached canonical provenance on office edits, reactivated prior inactive catalog rows, preserved dual Secretary pagination, and strengthened regression assertions.
 - Focused quality gates: Pint, PHPStan, ESLint, TypeScript, production build, 25 affected PostgreSQL tests / 1,196 assertions, and focused Playwright verification passed.
-- Full CI-equivalent local verification and exact-commit GitHub Actions are recorded when the delivery gates complete.
+- Full CI-equivalent local verification passed: 94 PostgreSQL tests / 1,994 assertions, both PDF baselines, migration rollback/reapply, dependency and tracked-secret audits, release configuration, queue smoke test, backup/restore, and 5 Playwright scenarios.
+- Implementation commit `f0f2a12587a64e305883e1bbb8db0fb847b33930` passed GitHub Actions run `30235192022`.
 
 Production release gates remain unchanged.
