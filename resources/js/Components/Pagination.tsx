@@ -14,6 +14,7 @@ type Props = {
     currentPage?: number;
     lastPage?: number;
     ariaLabel: string;
+    itemLabel?: string;
 };
 
 export default function Pagination({
@@ -24,23 +25,36 @@ export default function Pagination({
     currentPage,
     lastPage,
     ariaLabel,
+    itemLabel,
 }: Props) {
     if (links.length === 0) return null;
+
+    const displayLinks = compactPaginationLinks(links);
 
     return (
         <div className="pagination-shell">
             <p className="text-sm text-slate-600" aria-live="polite">
                 {total !== undefined
-                    ? `Showing ${from ?? 0} to ${to ?? 0} of ${total}`
+                    ? `Showing ${from ?? 0} to ${to ?? 0} of ${total} ${itemLabel ?? 'records'}.`
                     : `Page ${currentPage ?? 1} of ${lastPage ?? 1}`}
             </p>
             <nav aria-label={ariaLabel}>
                 <ul className="flex flex-wrap items-center gap-1.5">
-                    {links.map((link, index) => {
+                    {displayLinks.map((link, index) => {
                         const label = paginationLabel(link.label);
                         const numeric = /^\d+$/.test(label);
                         const responsiveClass =
                             numeric && !link.active ? 'hidden sm:inline-flex' : 'inline-flex';
+
+                        if (label === '…' || label === '...') {
+                            return (
+                                <li key={`ellipsis-${index}`} className="hidden sm:block">
+                                    <span className="pagination-ellipsis" aria-hidden="true">
+                                        …
+                                    </span>
+                                </li>
+                            );
+                        }
 
                         return (
                             <li key={`${link.label}-${index}`}>
@@ -48,14 +62,14 @@ export default function Pagination({
                                     <Link
                                         href={link.url}
                                         aria-current={link.active ? 'page' : undefined}
-                                        className={`${responsiveClass} min-h-11 min-w-11 items-center justify-center rounded-md border px-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-institution-600 focus:ring-offset-2 ${link.active ? 'border-institution-900 bg-institution-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-institution-600 hover:bg-institution-50'}`}
+                                        className={`${responsiveClass} pagination-link`}
                                     >
                                         {label}
                                     </Link>
                                 ) : (
                                     <span
                                         aria-disabled="true"
-                                        className={`${responsiveClass} min-h-11 min-w-11 items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-400`}
+                                        className={`${responsiveClass} pagination-link`}
                                     >
                                         {label}
                                     </span>
@@ -71,4 +85,38 @@ export default function Pagination({
 
 function paginationLabel(label: string) {
     return label.replace('&laquo;', '').replace('&raquo;', '').trim();
+}
+
+function compactPaginationLinks(links: PaginationLink[]) {
+    const numericLinks = links.filter((link) => /^\d+$/.test(paginationLabel(link.label)));
+    if (numericLinks.length <= 7) return links;
+
+    const first = numericLinks[0];
+    const last = numericLinks[numericLinks.length - 1];
+    const current = numericLinks.find((link) => link.active) ?? first;
+    const currentPage = Number(paginationLabel(current.label));
+    const visiblePages = new Set([
+        Number(paginationLabel(first.label)),
+        currentPage - 1,
+        currentPage,
+        currentPage + 1,
+        Number(paginationLabel(last.label)),
+    ]);
+    const visibleLinks = numericLinks.filter((link) =>
+        visiblePages.has(Number(paginationLabel(link.label))),
+    );
+    const compacted: PaginationLink[] = [];
+
+    visibleLinks.forEach((link, index) => {
+        const previous = visibleLinks[index - 1];
+        if (
+            previous &&
+            Number(paginationLabel(link.label)) - Number(paginationLabel(previous.label)) > 1
+        ) {
+            compacted.push({ url: null, label: '…', active: false });
+        }
+        compacted.push(link);
+    });
+
+    return [links[0], ...compacted, links[links.length - 1]];
 }

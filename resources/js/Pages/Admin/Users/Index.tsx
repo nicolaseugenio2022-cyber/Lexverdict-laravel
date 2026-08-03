@@ -1,4 +1,8 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import EmptyState from '../../../Components/EmptyState';
+import PageHeader from '../../../Components/PageHeader';
+import StatusBadge from '../../../Components/StatusBadge';
+import { useToast } from '../../../Components/toast';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 import type { PageProps } from '../../../types/page';
 
@@ -21,82 +25,142 @@ type Props = {
 };
 
 export default function Index({ users }: Props) {
+    const toast = useToast();
     const { flash } = usePage<PageProps>().props;
     const identityErrors = flash.errors.identity ?? [];
 
     return (
         <AuthenticatedLayout>
             <Head title="Users" />
-            <section className="rounded-md border border-slate-200 bg-white">
-                <div className="flex flex-col gap-3 border-b border-slate-200 p-5 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h1 className="text-xl font-semibold">Users</h1>
-                        <p className="text-sm text-slate-600">Staff accounts and active-state controls.</p>
-                    </div>
-                    <Link
-                        href="/admin/users/create"
-                        className="inline-flex min-h-11 items-center justify-center rounded-md bg-blue-900 px-4 text-sm font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                    >
-                        Create User
-                    </Link>
-                </div>
+            <div className="page-stack">
+                <PageHeader
+                    eyebrow="Administrator"
+                    title="Users"
+                    description="Staff accounts and active-state controls."
+                    actions={
+                        <Link href="/admin/users/create" className="btn btn-primary">
+                            Create User
+                        </Link>
+                    }
+                />
 
                 {identityErrors.map((error) => (
-                    <p key={error} className="mx-5 mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                    <p key={error} className="notice notice-danger">
                         {error}
                     </p>
                 ))}
 
-                <div className="table-scroll" tabIndex={0} role="region" aria-label="Users table">
-                    <table className="w-full min-w-[900px] text-left text-sm">
-                        <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
-                            <tr>
-                                <th className="px-5 py-3 font-semibold">Username</th>
-                                <th className="px-5 py-3 font-semibold">Name</th>
-                                <th className="px-5 py-3 font-semibold">Role</th>
-                                <th className="px-5 py-3 font-semibold">Status</th>
-                                <th className="px-5 py-3 font-semibold">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {users.map((user) => (
-                                <tr key={user.id} className="border-b border-slate-100">
-                                    <td className="px-5 py-3 font-medium">{user.username}</td>
-                                    <td className="px-5 py-3">
-                                        {user.staff_profile ? `${user.staff_profile.first_name} ${user.staff_profile.last_name}` : ''}
-                                    </td>
-                                    <td className="px-5 py-3">{user.role_label}</td>
-                                    <td className="px-5 py-3">{user.is_active ? 'Active' : 'Inactive'}</td>
-                                    <td className="px-5 py-3">
-                                        <div className="flex flex-wrap gap-2">
-                                            <Link className="font-medium text-blue-900" href={`/admin/users/${user.id}/edit`}>
-                                                Edit
-                                            </Link>
-                                            {user.is_active ? (
-                                                <button
-                                                    type="button"
-                                                    className="font-medium text-red-700"
-                                                    onClick={() => router.patch(`/admin/users/${user.id}/deactivate`)}
-                                                >
-                                                    Deactivate
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    className="font-medium text-blue-900"
-                                                    onClick={() => router.patch(`/admin/users/${user.id}/restore`)}
-                                                >
-                                                    Restore
-                                                </button>
-                                            )}
-                                        </div>
-                                    </td>
+                <section className="surface sticky-table-surface">
+                    <div
+                        className="table-scroll sticky-table-scroll"
+                        tabIndex={0}
+                        role="region"
+                        aria-label="Users table"
+                    >
+                        <table className="data-table sticky-table-header min-w-[900px]">
+                            <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
+                                <tr>
+                                    <th className="table-heading">Username</th>
+                                    <th className="table-heading">Name</th>
+                                    <th className="table-heading">Role</th>
+                                    <th className="table-heading">Status</th>
+                                    <th className="table-heading">Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+                            </thead>
+                            <tbody>
+                                {users.map((user) => (
+                                    <tr
+                                        key={user.id}
+                                        className="data-row border-b border-slate-100"
+                                    >
+                                        <td className="table-cell table-cell-primary">
+                                            {user.username}
+                                        </td>
+                                        <td className="table-cell">
+                                            {user.staff_profile
+                                                ? `${user.staff_profile.first_name} ${user.staff_profile.last_name}`
+                                                : ''}
+                                        </td>
+                                        <td className="table-cell">{user.role_label}</td>
+                                        <td className="table-cell">
+                                            <StatusBadge
+                                                value={user.is_active ? 'Active' : 'Inactive'}
+                                            />
+                                        </td>
+                                        <td className="table-cell table-cell-actions">
+                                            <div className="action-group">
+                                                <Link
+                                                    className="btn btn-secondary btn-compact"
+                                                    href={`/admin/users/${user.id}/edit`}
+                                                >
+                                                    Edit
+                                                </Link>
+                                                {user.is_active ? (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-danger-outline btn-compact"
+                                                        onClick={() =>
+                                                            router.patch(
+                                                                `/admin/users/${user.id}/deactivate`,
+                                                                {},
+                                                                {
+                                                                    onSuccess: () =>
+                                                                        toast.success(
+                                                                            'User deactivated.',
+                                                                        ),
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        Deactivate
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-secondary btn-compact"
+                                                        onClick={() =>
+                                                            router.patch(
+                                                                `/admin/users/${user.id}/restore`,
+                                                                {},
+                                                                {
+                                                                    onSuccess: () =>
+                                                                        toast.success(
+                                                                            'User restored.',
+                                                                        ),
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        Restore
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {users.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="p-0">
+                                            <EmptyState
+                                                title="No staff accounts are available."
+                                                description="Create an authorized staff account to begin managing users."
+                                                action={
+                                                    <Link
+                                                        href="/admin/users/create"
+                                                        className="btn btn-primary"
+                                                    >
+                                                        Create User
+                                                    </Link>
+                                                }
+                                            />
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
         </AuthenticatedLayout>
     );
 }

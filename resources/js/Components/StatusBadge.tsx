@@ -8,9 +8,9 @@ export default function StatusBadge({ value }: Props) {
     }
 
     const tone =
-        value === 'Approved' || value === 'For Filing' || value === 'Resolved'
+        value === 'Approved' || value === 'For Filing' || value === 'Resolved' || value === 'Active'
             ? 'status-success'
-            : value === 'Denied' || value === 'Dismissed'
+            : value === 'Denied' || value === 'Dismissed' || value === 'Failed'
               ? 'status-danger'
               : value === 'Pending' || value === 'PENDING' || value === 'Generating'
                 ? 'status-warning'

@@ -10,6 +10,11 @@ type Props = {
 };
 
 type BarangayOption = AddressOption & { label?: string };
+type AddressControlProps = {
+    id: string;
+    'aria-invalid'?: true;
+    'aria-describedby'?: string;
+};
 
 export default function CascadingAddressFields({ index, party, regions, errors, onChange }: Props) {
     const [provinces, setProvinces] = useState<AddressOption[]>([]);
@@ -89,79 +94,90 @@ export default function CascadingAddressFields({ index, party, regions, errors, 
                 </p>
             )}
             <AddressField
+                id={`case-party-${index}-region`}
                 label="Region"
                 error={errors[`parties.${index}.region_code`] ?? errors[`parties.${index}.region`]}
             >
-                <select
-                    className="input"
-                    value={party.region_code}
-                    onChange={(event) => {
-                        const option = regions.find((region) => region.code === event.target.value);
-                        setProvinces([]);
-                        setMunicipalities([]);
-                        setBarangays([]);
-                        update({
-                            region_code: option?.code ?? '',
-                            region: option?.name ?? '',
-                            province_code: '',
-                            province: '',
-                            municipality_code: '',
-                            municipality: '',
-                            barangay_code: '',
-                            barangay: '',
-                        });
-                    }}
-                >
-                    <option value="">Select Region</option>
-                    {regions.map((region) => (
-                        <option key={region.code} value={region.code}>
-                            {region.name}
-                        </option>
-                    ))}
-                </select>
+                {(controlProps) => (
+                    <select
+                        {...controlProps}
+                        className="input"
+                        value={party.region_code}
+                        onChange={(event) => {
+                            const option = regions.find(
+                                (region) => region.code === event.target.value,
+                            );
+                            setProvinces([]);
+                            setMunicipalities([]);
+                            setBarangays([]);
+                            update({
+                                region_code: option?.code ?? '',
+                                region: option?.name ?? '',
+                                province_code: '',
+                                province: '',
+                                municipality_code: '',
+                                municipality: '',
+                                barangay_code: '',
+                                barangay: '',
+                            });
+                        }}
+                    >
+                        <option value="">Select Region</option>
+                        {regions.map((region) => (
+                            <option key={region.code} value={region.code}>
+                                {region.name}
+                            </option>
+                        ))}
+                    </select>
+                )}
             </AddressField>
 
             <AddressField
+                id={`case-party-${index}-province`}
                 label="Province"
                 error={
                     errors[`parties.${index}.province_code`] ?? errors[`parties.${index}.province`]
                 }
                 loading={loading.provinces}
             >
-                <select
-                    className="input"
-                    value={party.province_code}
-                    disabled={!party.region_code || loading.provinces}
-                    onChange={(event) => {
-                        const option = provinces.find(
-                            (province) => province.code === event.target.value,
-                        );
-                        setMunicipalities([]);
-                        setBarangays([]);
-                        update({
-                            province_code: option?.code ?? '',
-                            province: option?.name ?? '',
-                            municipality_code: '',
-                            municipality: '',
-                            barangay_code: '',
-                            barangay: '',
-                        });
-                    }}
-                >
-                    <option value="">
-                        {provinces.length === 0 && party.region_code
-                            ? 'No Province'
-                            : 'Select Province or leave blank for independent city'}
-                    </option>
-                    {provinces.map((province) => (
-                        <option key={province.code} value={province.code}>
-                            {province.name}
+                {(controlProps) => (
+                    <select
+                        {...controlProps}
+                        className="input"
+                        value={party.province_code}
+                        disabled={!party.region_code || loading.provinces}
+                        onChange={(event) => {
+                            const option = provinces.find(
+                                (province) => province.code === event.target.value,
+                            );
+                            setMunicipalities([]);
+                            setBarangays([]);
+                            update({
+                                province_code: option?.code ?? '',
+                                province: option?.name ?? '',
+                                municipality_code: '',
+                                municipality: '',
+                                barangay_code: '',
+                                barangay: '',
+                            });
+                        }}
+                    >
+                        <option value="">
+                            {provinces.length === 0 && party.region_code
+                                ? 'No Province'
+                                : 'Select Province or leave blank for independent city'}
                         </option>
-                    ))}
-                </select>
+                        {provinces.map((province) => (
+                            <option key={province.code} value={province.code}>
+                                {province.name}
+                            </option>
+                        ))}
+                    </select>
+                )}
             </AddressField>
 
             <AddressField
+                id={`case-party-${index}-municipality`}
                 label="Municipality/City"
                 error={
                     errors[`parties.${index}.municipality_code`] ??
@@ -169,68 +185,87 @@ export default function CascadingAddressFields({ index, party, regions, errors, 
                 }
                 loading={loading.municipalities}
             >
-                <select
-                    className="input"
-                    value={party.municipality_code}
-                    disabled={
-                        !party.region_code || loading.municipalities || municipalities.length === 0
-                    }
-                    onChange={(event) => {
-                        const option = municipalities.find(
-                            (municipality) => municipality.code === event.target.value,
-                        );
-                        setBarangays([]);
-                        update({
-                            municipality_code: option?.code ?? '',
-                            municipality: option?.name ?? '',
-                            barangay_code: '',
-                            barangay: '',
-                        });
-                    }}
-                >
-                    <option value="">Select Municipality/City</option>
-                    {municipalities.map((municipality) => (
-                        <option key={municipality.code} value={municipality.code}>
-                            {municipality.name}
-                        </option>
-                    ))}
-                </select>
+                {(controlProps) => (
+                    <select
+                        {...controlProps}
+                        className="input"
+                        value={party.municipality_code}
+                        disabled={
+                            !party.region_code ||
+                            loading.municipalities ||
+                            municipalities.length === 0
+                        }
+                        onChange={(event) => {
+                            const option = municipalities.find(
+                                (municipality) => municipality.code === event.target.value,
+                            );
+                            setBarangays([]);
+                            update({
+                                municipality_code: option?.code ?? '',
+                                municipality: option?.name ?? '',
+                                barangay_code: '',
+                                barangay: '',
+                            });
+                        }}
+                    >
+                        <option value="">Select Municipality/City</option>
+                        {municipalities.map((municipality) => (
+                            <option key={municipality.code} value={municipality.code}>
+                                {municipality.name}
+                            </option>
+                        ))}
+                    </select>
+                )}
             </AddressField>
 
             <AddressField
+                id={`case-party-${index}-barangay`}
                 label="Barangay"
                 error={
                     errors[`parties.${index}.barangay_code`] ?? errors[`parties.${index}.barangay`]
                 }
                 loading={loading.barangays}
             >
-                <select
-                    className="input"
-                    value={party.barangay_code}
-                    disabled={!party.municipality_code || loading.barangays}
-                    onChange={(event) => {
-                        const option = barangays.find(
-                            (barangay) => barangay.code === event.target.value,
-                        );
-                        update({ barangay_code: option?.code ?? '', barangay: option?.name ?? '' });
-                    }}
-                >
-                    <option value="">Select Barangay</option>
-                    {barangays.map((barangay) => (
-                        <option key={barangay.code} value={barangay.code}>
-                            {barangay.label ?? barangay.name}
-                        </option>
-                    ))}
-                </select>
+                {(controlProps) => (
+                    <select
+                        {...controlProps}
+                        className="input"
+                        value={party.barangay_code}
+                        disabled={!party.municipality_code || loading.barangays}
+                        onChange={(event) => {
+                            const option = barangays.find(
+                                (barangay) => barangay.code === event.target.value,
+                            );
+                            update({
+                                barangay_code: option?.code ?? '',
+                                barangay: option?.name ?? '',
+                            });
+                        }}
+                    >
+                        <option value="">Select Barangay</option>
+                        {barangays.map((barangay) => (
+                            <option key={barangay.code} value={barangay.code}>
+                                {barangay.label ?? barangay.name}
+                            </option>
+                        ))}
+                    </select>
+                )}
             </AddressField>
 
-            <AddressField label="Street" error={errors[`parties.${index}.street`]}>
-                <input
-                    className="input"
-                    value={party.street}
-                    autoComplete="street-address"
-                    onChange={(event) => update({ street: event.target.value })}
-                />
+            <AddressField
+                id={`case-party-${index}-street`}
+                label="Street"
+                error={errors[`parties.${index}.street`]}
+            >
+                {(controlProps) => (
+                    <input
+                        {...controlProps}
+                        className="input"
+                        value={party.street}
+                        autoComplete="street-address"
+                        onChange={(event) => update({ street: event.target.value })}
+                    />
+                )}
             </AddressField>
 
             {loadError && (
@@ -243,33 +278,45 @@ export default function CascadingAddressFields({ index, party, regions, errors, 
 }
 
 function AddressField({
+    id,
     label,
     error,
     loading,
     children,
 }: {
+    id: string;
     label: string;
     error?: string;
     loading?: boolean;
-    children: ReactNode;
+    children: (props: AddressControlProps) => ReactNode;
 }) {
+    const errorId = `${id}-error`;
+
     return (
-        <label className="block text-sm font-medium text-slate-700">
+        <div>
             <span className="flex items-center justify-between gap-2">
-                {label}
+                <label htmlFor={id} className="text-sm font-medium text-slate-700">
+                    {label}
+                </label>
                 {loading && (
                     <span className="text-xs font-normal text-slate-600" role="status">
                         Loading...
                     </span>
                 )}
             </span>
-            <span className="mt-2 block">{children}</span>
+            <span className="mt-2 block">
+                {children({
+                    id,
+                    'aria-invalid': error ? true : undefined,
+                    'aria-describedby': error ? errorId : undefined,
+                })}
+            </span>
             {error && (
-                <span className="mt-2 block text-sm text-red-700" role="alert">
+                <span id={errorId} className="mt-2 block text-sm text-red-700" role="alert">
                     {error}
                 </span>
             )}
-        </label>
+        </div>
     );
 }
 

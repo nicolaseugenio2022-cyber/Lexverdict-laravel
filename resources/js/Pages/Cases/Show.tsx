@@ -1,7 +1,10 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import EmptyState from '../../Components/EmptyState';
+import OperationalTimestamp from '../../Components/OperationalTimestamp';
 import PageHeader from '../../Components/PageHeader';
 import StatusBadge from '../../Components/StatusBadge';
+import { useToast } from '../../Components/toast';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import type { CaseRecord } from './types';
 
@@ -62,6 +65,7 @@ export default function Show({
     can_generate_subpoena,
     back_url,
 }: Props) {
+    const toast = useToast();
     const [generating, setGenerating] = useState(false);
     const hasPendingDocument = documents.some(
         (document) => document.generated_at === null && document.failed_at === null,
@@ -102,6 +106,9 @@ export default function Show({
             {},
             {
                 preserveScroll: true,
+                onSuccess: () => toast.info('Subpoena PDF generation requested.'),
+                onHttpException: () => toast.error('Unable to request the Subpoena PDF.'),
+                onNetworkError: () => toast.error('Unable to request the Subpoena PDF.'),
                 onFinish: () => setGenerating(false),
             },
         );
@@ -110,7 +117,7 @@ export default function Show({
     return (
         <AuthenticatedLayout>
             <Head title={caseRecord.docket_number} />
-            <section className="space-y-6">
+            <section className="page-stack">
                 {case_pin && (
                     <div
                         className="notice notice-warning flex flex-wrap items-center justify-between gap-3"
@@ -141,8 +148,11 @@ export default function Show({
                     }
                 />
 
-                <section className="surface p-5" aria-labelledby="case-overview-heading">
-                    <div className="panel-header -mx-5 -mt-5 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                <section
+                    className="surface overflow-hidden"
+                    aria-labelledby="case-overview-heading"
+                >
+                    <div className="panel-header flex flex-wrap items-center justify-between gap-3">
                         <h2 id="case-overview-heading" className="panel-title">
                             Case Overview
                         </h2>
@@ -151,7 +161,7 @@ export default function Show({
                             <StatusBadge value={caseRecord.subpoena_status} />
                         </div>
                     </div>
-                    <dl className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    <dl className="surface-body grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         <Detail label="Date" value={caseRecord.date} />
                         <Detail label="1st Hearing" value={caseRecord.hearing_date_1 ?? ''} />
                         <Detail label="2nd Hearing" value={caseRecord.hearing_date_2 ?? ''} />
@@ -183,7 +193,7 @@ export default function Show({
                                         key={`${party.role}-${party.last_name}-${index}`}
                                         className="grid gap-2 py-4 text-sm md:grid-cols-[140px_minmax(0,1fr)]"
                                     >
-                                        <p className="font-semibold text-slate-700">{party.role}</p>
+                                        <p className="font-medium text-slate-700">{party.role}</p>
                                         <div>
                                             <p className="font-medium">
                                                 {[
@@ -222,13 +232,14 @@ export default function Show({
                                             className="py-4"
                                         >
                                             <div className="flex flex-wrap items-center gap-2">
-                                                <p className="font-semibold">
+                                                <p className="font-medium text-slate-950">
                                                     Revision {decision.revision_number}
                                                 </p>
                                                 <StatusBadge value={decision.decision} />
                                             </div>
                                             <p className="mt-1 text-slate-600">
-                                                {decision.decided_by} | {decision.decided_at}
+                                                {decision.decided_by} |{' '}
+                                                <OperationalTimestamp value={decision.decided_at} />
                                             </p>
                                             {decision.comment && (
                                                 <p className="notice notice-danger mt-3 whitespace-pre-wrap">
@@ -295,7 +306,10 @@ export default function Show({
                                     </button>
                                 )}
                                 {documents.length === 0 ? (
-                                    <p className="text-slate-600">No generated Subpoena PDF.</p>
+                                    <EmptyState
+                                        title="No generated Subpoena PDF is available."
+                                        description="Generated document versions will appear here."
+                                    />
                                 ) : (
                                     <ol
                                         className="divide-y divide-slate-200 border-y border-slate-200"
@@ -303,13 +317,15 @@ export default function Show({
                                     >
                                         {documents.map((document) => (
                                             <li key={document.id} className="py-4">
-                                                <p className="font-semibold">
+                                                <p className="font-medium text-slate-950">
                                                     Version {document.version}
                                                 </p>
                                                 <p className="mt-1 text-slate-600">
                                                     Requested by{' '}
                                                     {document.requested_by || 'Unknown'} |{' '}
-                                                    {document.requested_at}
+                                                    <OperationalTimestamp
+                                                        value={document.requested_at}
+                                                    />
                                                 </p>
                                                 {document.generated_at ? (
                                                     <a
@@ -347,8 +363,10 @@ export default function Show({
                                     key={`${item.label}-${index}`}
                                     className="relative pb-5 pl-5 last:pb-0 before:absolute before:-left-1.5 before:top-1.5 before:size-3 before:rounded-full before:border-2 before:border-white before:bg-institution-800"
                                 >
-                                    <p className="font-semibold">{item.label}</p>
-                                    <p className="mt-1 text-slate-600">{item.at ?? ''}</p>
+                                    <p className="font-medium text-slate-950">{item.label}</p>
+                                    <p className="mt-1 text-slate-600">
+                                        <OperationalTimestamp value={item.at} />
+                                    </p>
                                     {item.actor && (
                                         <p className="mt-1 text-slate-600">{item.actor}</p>
                                     )}
@@ -365,7 +383,7 @@ export default function Show({
 function Detail({ label, value }: { label: string; value: string }) {
     return (
         <div>
-            <dt className="text-xs font-semibold uppercase text-slate-500">{label}</dt>
+            <dt className="meta-label uppercase">{label}</dt>
             <dd className="mt-1 text-sm text-slate-950">{value || 'Not set'}</dd>
         </div>
     );
@@ -373,9 +391,11 @@ function Detail({ label, value }: { label: string; value: string }) {
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
     return (
-        <section className="surface p-5">
-            <h2 className="section-title border-b border-slate-200 pb-3">{title}</h2>
-            <div className="mt-4">{children}</div>
+        <section className="surface overflow-hidden">
+            <div className="panel-header">
+                <h2 className="panel-title">{title}</h2>
+            </div>
+            <div className="surface-body">{children}</div>
         </section>
     );
 }

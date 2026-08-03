@@ -202,7 +202,14 @@ class ReportsAndAuditTest extends TestCase
         $this->actingAs($admin)->get('/admin/audit')
             ->assertInertia(fn (Assert $page) => $page
                 ->has('events.data', 10)
+                ->where('events.per_page', 10)
+                ->where('events.total', 11)
                 ->where('events.last_page', 2));
+        $this->actingAs($admin)->get('/admin/audit?page=2')
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('events.data', 1)
+                ->where('events.current_page', 2)
+                ->where('events.total', 11));
 
         $this->expectException(LogicException::class);
         $event->update(['event_type' => 'changed']);

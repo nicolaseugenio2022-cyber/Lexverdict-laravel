@@ -90,7 +90,12 @@ export default function CrimeAutocomplete({ offenses, selectedIds, onChange, err
                             ? `${listboxId}-${suggestions[activeIndex].id}`
                             : undefined
                     }
-                    aria-describedby={error ? 'crime-selection-error' : 'crime-selection-help'}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={
+                        error
+                            ? 'crime-selection-help crime-selection-error'
+                            : 'crime-selection-help'
+                    }
                     autoComplete="off"
                     placeholder="Search the Crime catalog"
                     onFocus={() => {

@@ -9,6 +9,7 @@ use App\Domain\Cases\Enums\PartyRole;
 use App\Domain\Cases\Enums\SubpoenaStatus;
 use App\Domain\Cases\Exceptions\CaseDataInvariantException;
 use App\Domain\Cases\Queries\CaseListQuery;
+use App\Domain\Dashboard\Queries\OperationalDashboardQuery;
 use App\Domain\Documents\DocumentAccess;
 use App\Domain\Identity\Enums\StaffRole;
 use App\Domain\Resolutions\Actions\ResolutionAccess;
@@ -44,6 +45,7 @@ class CaseController extends Controller
         CaseAccess $access,
         ResolutionAccess $resolutionAccess,
         DocumentAccess $documentAccess,
+        OperationalDashboardQuery $operationalDashboard,
     ): Response {
         $user = $request->user();
         $isProcessServer = $user->hasRole(StaffRole::ProcessServer);
@@ -64,6 +66,9 @@ class CaseController extends Controller
             'is_process_server' => $isProcessServer,
             'list_role' => $this->caseListRole($user),
             'list_url' => $isProcessServer ? route('process-server.cases.index', absolute: false) : route('cases.index', absolute: false),
+            'operational_metrics' => $user->hasRole(StaffRole::Superuser)
+                ? []
+                : $operationalDashboard->landingMetrics($user),
         ]);
     }
 

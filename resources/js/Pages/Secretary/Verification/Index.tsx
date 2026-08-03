@@ -1,10 +1,14 @@
 import { Head, Link, router } from '@inertiajs/react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { useState } from 'react';
 import EmptyState from '../../../Components/EmptyState';
+import ExpandableCollection from '../../../Components/ExpandableCollection';
 import PageHeader from '../../../Components/PageHeader';
 import Pagination, { type PaginationLink } from '../../../Components/Pagination';
+import RecordEntryLink from '../../../Components/RecordEntryLink';
 import StatusBadge from '../../../Components/StatusBadge';
+import StickyDataset from '../../../Components/StickyDataset';
+import { useToast } from '../../../Components/toast';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 
 type WorkflowType = 'subpoenas' | 'resolutions';
@@ -109,6 +113,44 @@ function VerificationSection({
     const [direction, setDirection] = useState(filters.direction);
     const title = type === 'subpoenas' ? 'Subpoenas' : 'Resolutions';
     const singular = type === 'subpoenas' ? 'Subpoena' : 'Resolution';
+    const hasActiveFilters = Boolean(filters.search || filters.status);
+    const emptyState = (
+        <EmptyState
+            title={
+                hasActiveFilters
+                    ? `No ${title} match the current filters.`
+                    : `No ${title} are available for verification.`
+            }
+            description={
+                hasActiveFilters
+                    ? `Clear the current ${singular} search and status filter to review all visible records.`
+                    : `${title} available to the assigned Secretary will appear here.`
+            }
+            action={
+                hasActiveFilters ? (
+                    <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() =>
+                            router.get(
+                                '/secretary/verifying-cases',
+                                verificationQuery(
+                                    allFilters,
+                                    type,
+                                    { ...filters, search: '', status: '' },
+                                    subpoenaPage,
+                                    resolutionPage,
+                                ),
+                                { preserveState: true },
+                            )
+                        }
+                    >
+                        Clear filters
+                    </button>
+                ) : undefined
+            }
+        />
+    );
 
     function submit(event: FormEvent) {
         event.preventDefault();
@@ -126,81 +168,102 @@ function VerificationSection({
     }
 
     return (
-        <section aria-labelledby={`${type}-heading`} className="surface min-w-0 overflow-hidden">
+        <section
+            aria-labelledby={`${type}-heading`}
+            className="surface sticky-table-surface min-w-0"
+        >
             <h2 id={`${type}-heading`} className="panel-header panel-title px-4 py-3">
                 {title}
             </h2>
-            <form
-                onSubmit={submit}
-                className="filter-panel grid gap-3 rounded-none border-x-0 p-4 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_160px_170px_140px_auto]"
+            <StickyDataset
+                stickyControls={false}
+                controls={
+                    <form
+                        onSubmit={submit}
+                        className="filter-panel grid gap-3 rounded-none border-x-0 p-4 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_160px_170px_140px_auto]"
+                    >
+                        <Field label="Search">
+                            <input
+                                className="input mt-2"
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                            />
+                        </Field>
+                        <Field label="Status">
+                            <select
+                                className="input mt-2"
+                                value={status}
+                                onChange={(event) => setStatus(event.target.value)}
+                            >
+                                <option value="">All</option>
+                                {statuses.map((item) => (
+                                    <option key={item} value={item}>
+                                        {item}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                        <Field label="Sort By">
+                            <select
+                                className="input mt-2"
+                                value={sort}
+                                onChange={(event) => setSort(event.target.value)}
+                            >
+                                <option value="docket_number">Docket Number</option>
+                                {type === 'subpoenas' && <option value="date">Date</option>}
+                                <option value="status">Status</option>
+                                <option value="revision">Revision</option>
+                                {type === 'resolutions' && <option value="verdict">Verdict</option>}
+                            </select>
+                        </Field>
+                        <Field label="Direction">
+                            <select
+                                className="input mt-2"
+                                value={direction}
+                                onChange={(event) => setDirection(event.target.value)}
+                            >
+                                <option value="asc">Ascending</option>
+                                <option value="desc">Descending</option>
+                            </select>
+                        </Field>
+                        <button type="submit" className="btn btn-secondary self-end">
+                            Apply
+                        </button>
+                    </form>
+                }
             >
-                <Field label="Search">
-                    <input
-                        className="input mt-2"
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
+                <div
+                    className="hidden xl:block"
+                    role="region"
+                    aria-label={`${singular} verification table`}
+                >
+                    <WorkflowTable
+                        type={type}
+                        items={items.data}
+                        returnUrl={returnUrl}
+                        emptyState={emptyState}
                     />
-                </Field>
-                <Field label="Status">
-                    <select
-                        className="input mt-2"
-                        value={status}
-                        onChange={(event) => setStatus(event.target.value)}
-                    >
-                        <option value="">All</option>
-                        {statuses.map((item) => (
-                            <option key={item} value={item}>
-                                {item}
-                            </option>
-                        ))}
-                    </select>
-                </Field>
-                <Field label="Sort By">
-                    <select
-                        className="input mt-2"
-                        value={sort}
-                        onChange={(event) => setSort(event.target.value)}
-                    >
-                        <option value="docket_number">Docket Number</option>
-                        {type === 'subpoenas' && <option value="date">Date</option>}
-                        <option value="status">Status</option>
-                        <option value="revision">Revision</option>
-                        {type === 'resolutions' && <option value="verdict">Verdict</option>}
-                    </select>
-                </Field>
-                <Field label="Direction">
-                    <select
-                        className="input mt-2"
-                        value={direction}
-                        onChange={(event) => setDirection(event.target.value)}
-                    >
-                        <option value="asc">Ascending</option>
-                        <option value="desc">Descending</option>
-                    </select>
-                </Field>
-                <button type="submit" className="btn btn-secondary self-end">
-                    Apply
-                </button>
-            </form>
-
-            <div
-                className="table-scroll hidden xl:block"
-                tabIndex={0}
-                role="region"
-                aria-label={`${singular} verification table`}
-            >
-                <WorkflowTable type={type} items={items.data} returnUrl={returnUrl} />
-            </div>
-            <div className="xl:hidden" role="region" aria-label={`${singular} verification list`}>
-                <WorkflowCards type={type} items={items.data} returnUrl={returnUrl} />
-            </div>
-            <Pagination
-                links={items.links}
-                from={items.from}
-                to={items.to}
-                total={items.total}
-                ariaLabel={`${title} pagination`}
-            />
+                </div>
+                <div
+                    className="xl:hidden"
+                    role="region"
+                    aria-label={`${singular} verification list`}
+                >
+                    <WorkflowCards
+                        type={type}
+                        items={items.data}
+                        returnUrl={returnUrl}
+                        emptyState={emptyState}
+                    />
+                </div>
+                <Pagination
+                    links={items.links}
+                    from={items.from}
+                    to={items.to}
+                    total={items.total}
+                    ariaLabel={`${title} pagination`}
+                />
+            </StickyDataset>
         </section>
     );
 }
@@ -209,91 +272,134 @@ function WorkflowTable({
     type,
     items,
     returnUrl,
+    emptyState,
 }: {
     type: WorkflowType;
     items: WorkflowItem[];
     returnUrl: string;
+    emptyState: ReactNode;
 }) {
     const subpoena = type === 'subpoenas';
-    const headers = subpoena
-        ? [
-              'Docket Number',
-              'Crime/Case',
-              'Complainant',
-              'Respondent',
-              'Police Station',
-              'Date',
-              'Assigned Prosecutor',
-              'Subpoena Status',
-              'Revision',
-              'Created By',
-              'Workflow',
-              'Denial Reason',
-              'Actions',
-          ]
-        : [
-              'Docket Number',
-              'Crime/Case',
-              'Complainant',
-              'Respondent',
-              'Assigned Prosecutor',
-              'Resolution Verdict',
-              'Resolution Status',
-              'Court',
-              'Revision',
-              'Submitted By',
-              'Workflow',
-              'Denial Reason',
-              'Actions',
-          ];
+    const hasWorkflowCommands = items.some((item) => hasWorkflowCommand(type, item));
 
     return (
-        <table className="w-full min-w-[1640px] text-left text-sm">
+        <table className="data-table sticky-table-header table-fixed">
             <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                 <tr>
-                    {headers.map((header) => (
-                        <th key={header} className="whitespace-nowrap px-3 py-3 font-semibold">
-                            {header}
-                        </th>
-                    ))}
+                    <th className={`table-heading ${hasWorkflowCommands ? 'w-[15%]' : 'w-[18%]'}`}>
+                        Case
+                    </th>
+                    <th className={`table-heading ${hasWorkflowCommands ? 'w-[16%]' : 'w-[18%]'}`}>
+                        Parties
+                    </th>
+                    <th className={`table-heading ${hasWorkflowCommands ? 'w-[18%]' : 'w-[20%]'}`}>
+                        Assignment
+                    </th>
+                    <th className={`table-heading ${hasWorkflowCommands ? 'w-[18%]' : 'w-[20%]'}`}>
+                        {subpoena ? 'Subpoena' : 'Resolution'}
+                    </th>
+                    <th className={`table-heading ${hasWorkflowCommands ? 'w-[19%]' : 'w-[24%]'}`}>
+                        Workflow
+                    </th>
+                    {hasWorkflowCommands && <th className="table-heading w-[14%]">Actions</th>}
                 </tr>
             </thead>
             <tbody>
                 {items.map((item) => (
-                    <tr key={item.case_id} className="data-row border-b border-slate-100 align-top">
-                        <CaseCells item={item} includeStation={subpoena} />
-                        {subpoena ? (
-                            <>
-                                <td className="px-3 py-3">
+                    <tr
+                        key={item.case_id}
+                        className="record-entry data-row border-b border-slate-100 align-top"
+                    >
+                        <td className="table-cell">
+                            <p className="table-cell-primary">
+                                <RecordEntryLink
+                                    href={workflowHref(type, item, returnUrl)}
+                                    accessibleLabel={workflowAccessibleLabel(type, item)}
+                                >
+                                    {item.docket_number}
+                                </RecordEntryLink>
+                            </p>
+                            <ExpandableCollection
+                                id={`verification-${type}-${item.case_id}-desktop-offenses`}
+                                items={item.offenses}
+                                singularLabel="offense"
+                                pluralLabel="offenses"
+                                emptyValue="-"
+                                className="mt-1"
+                            />
+                        </td>
+                        <td className="table-cell">
+                            <GroupedDetail
+                                label="Complainant"
+                                value={item.complainants.join(', ')}
+                            />
+                            <GroupedDetail label="Respondent" value={item.respondents.join(', ')} />
+                        </td>
+                        <td className="table-cell">
+                            {subpoena && (
+                                <>
+                                    <GroupedDetail
+                                        label="Police Station"
+                                        value={item.police_station}
+                                    />
+                                    <GroupedDetail label="Date" value={item.date} />
+                                </>
+                            )}
+                            <GroupedDetail
+                                label="Assigned Prosecutor"
+                                value={item.assigned_prosecutor}
+                            />
+                        </td>
+                        <td className="table-cell">
+                            {subpoena ? (
+                                <>
                                     <StatusBadge value={item.subpoena_status} />
-                                </td>
-                                <td className="px-3 py-3">{item.revision_number}</td>
-                                <td className="px-3 py-3">{item.created_by ?? '-'}</td>
-                            </>
-                        ) : (
-                            <>
-                                <td className="px-3 py-3">{item.resolution_verdict ?? '-'}</td>
-                                <td className="px-3 py-3">
-                                    <StatusBadge value={item.resolution_status} />
-                                </td>
-                                <td className="px-3 py-3">{item.court ?? '-'}</td>
-                                <td className="px-3 py-3">{item.revision_number ?? '-'}</td>
-                                <td className="px-3 py-3">{item.submitted_by ?? '-'}</td>
-                            </>
+                                    <GroupedDetail
+                                        label="Revision"
+                                        value={item.revision_number?.toString()}
+                                    />
+                                    <GroupedDetail label="Created By" value={item.created_by} />
+                                </>
+                            ) : (
+                                <>
+                                    <GroupedDetail
+                                        label="Resolution Verdict"
+                                        value={item.resolution_verdict}
+                                    />
+                                    <div className="mt-1.5">
+                                        <span className="metadata-text mr-1">
+                                            Resolution Status:
+                                        </span>
+                                        <StatusBadge value={item.resolution_status} />
+                                    </div>
+                                    <GroupedDetail label="Court" value={item.court} />
+                                    <GroupedDetail
+                                        label="Revision"
+                                        value={item.revision_number?.toString()}
+                                    />
+                                    <GroupedDetail label="Submitted By" value={item.submitted_by} />
+                                </>
+                            )}
+                        </td>
+                        <td className="table-cell">
+                            <p>{item.workflow_label}</p>
+                            <GroupedDetail
+                                label="Denial Reason"
+                                value={item.denial_reason}
+                                danger={Boolean(item.denial_reason)}
+                            />
+                        </td>
+                        {hasWorkflowCommands && (
+                            <td className="record-entry-actions table-cell table-cell-actions whitespace-normal">
+                                <WorkflowActions type={type} item={item} />
+                            </td>
                         )}
-                        <td className="px-3 py-3">{item.workflow_label}</td>
-                        <td className="max-w-64 px-3 py-3 text-red-800">
-                            {item.denial_reason ?? '-'}
-                        </td>
-                        <td className="px-3 py-3">
-                            <WorkflowActions type={type} item={item} returnUrl={returnUrl} />
-                        </td>
                     </tr>
                 ))}
                 {items.length === 0 && (
                     <tr>
-                        <td colSpan={13} className="px-4 py-8 text-center text-slate-600">
-                            No {type === 'subpoenas' ? 'Subpoenas' : 'Resolutions'} found.
+                        <td colSpan={hasWorkflowCommands ? 6 : 5} className="p-0">
+                            {emptyState}
                         </td>
                     </tr>
                 )}
@@ -302,48 +408,41 @@ function WorkflowTable({
     );
 }
 
-function CaseCells({ item, includeStation }: { item: WorkflowItem; includeStation: boolean }) {
-    return (
-        <>
-            <td className="px-3 py-3 font-medium text-slate-950">{item.docket_number}</td>
-            <td className="px-3 py-3">{item.offenses.join(', ')}</td>
-            <td className="px-3 py-3">{item.complainants.join(', ')}</td>
-            <td className="px-3 py-3">{item.respondents.join(', ')}</td>
-            {includeStation && (
-                <>
-                    <td className="px-3 py-3">{item.police_station}</td>
-                    <td className="px-3 py-3">{item.date}</td>
-                </>
-            )}
-            <td className="px-3 py-3">{item.assigned_prosecutor}</td>
-        </>
-    );
-}
-
 function WorkflowCards({
     type,
     items,
     returnUrl,
+    emptyState,
 }: {
     type: WorkflowType;
     items: WorkflowItem[];
     returnUrl: string;
+    emptyState: ReactNode;
 }) {
-    if (items.length === 0)
-        return (
-            <EmptyState title={`No ${type === 'subpoenas' ? 'Subpoenas' : 'Resolutions'} found.`} />
-        );
+    if (items.length === 0) return emptyState;
 
     return (
         <ol>
             {items.map((item) => (
-                <li key={item.case_id} className="mobile-data-card">
+                <li key={item.case_id} className="record-entry mobile-data-card">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0">
-                            <p className="font-semibold">{item.docket_number}</p>
-                            <p className="mt-1 break-words text-sm text-slate-700">
-                                {item.offenses.join(', ')}
+                            <p className="font-semibold">
+                                <RecordEntryLink
+                                    href={workflowHref(type, item, returnUrl)}
+                                    accessibleLabel={workflowAccessibleLabel(type, item)}
+                                >
+                                    {item.docket_number}
+                                </RecordEntryLink>
                             </p>
+                            <ExpandableCollection
+                                id={`verification-${type}-${item.case_id}-mobile-offenses`}
+                                items={item.offenses}
+                                singularLabel="offense"
+                                pluralLabel="offenses"
+                                emptyValue=""
+                                className="mt-1 break-words text-sm text-slate-700"
+                            />
                         </div>
                         <StatusBadge
                             value={
@@ -380,32 +479,23 @@ function WorkflowCards({
                             {item.denial_reason}
                         </p>
                     )}
-                    <div className="mt-4 flex flex-wrap gap-4 border-t border-slate-200 pt-3">
-                        <WorkflowActions type={type} item={item} returnUrl={returnUrl} />
-                    </div>
+                    {hasWorkflowCommand(type, item) && (
+                        <div className="record-entry-actions mt-4 border-t border-slate-200 pt-3">
+                            <WorkflowActions type={type} item={item} />
+                        </div>
+                    )}
                 </li>
             ))}
         </ol>
     );
 }
 
-function WorkflowActions({
-    type,
-    item,
-    returnUrl,
-}: {
-    type: WorkflowType;
-    item: WorkflowItem;
-    returnUrl: string;
-}) {
+function WorkflowActions({ type, item }: { type: WorkflowType; item: WorkflowItem }) {
+    const toast = useToast();
+
     if (type === 'subpoenas')
         return (
-            <>
-                <ActionLink
-                    href={`/cases/${item.case_id}?return_to=${encodeURIComponent(returnUrl)}`}
-                >
-                    View
-                </ActionLink>
+            <div className="action-group items-start">
                 {item.can_revise && (
                     <ActionLink href={`/cases/${item.case_id}/edit`}>
                         {item.subpoena_status === 'Denied' ? 'Revise and Resubmit' : 'Edit'}
@@ -414,20 +504,30 @@ function WorkflowActions({
                 {item.can_generate_pdf && (
                     <button
                         type="button"
-                        onClick={() => router.post(`/cases/${item.case_id}/documents/subpoena`)}
-                        className="action-link"
+                        onClick={() =>
+                            router.post(
+                                `/cases/${item.case_id}/documents/subpoena`,
+                                {},
+                                {
+                                    onSuccess: () =>
+                                        toast.info('Subpoena PDF generation requested.'),
+                                    onHttpException: () =>
+                                        toast.error('Unable to request the Subpoena PDF.'),
+                                    onNetworkError: () =>
+                                        toast.error('Unable to request the Subpoena PDF.'),
+                                },
+                            )
+                        }
+                        className="btn btn-secondary btn-compact max-w-full flex-none whitespace-normal"
                     >
                         Generate PDF
                     </button>
                 )}
-            </>
+            </div>
         );
 
     return (
-        <>
-            {item.resolution_id && (
-                <ActionLink href={`/resolutions/${item.resolution_id}`}>View</ActionLink>
-            )}
+        <div className="action-group items-start">
             {item.can_submit && (
                 <ActionLink href={`/cases/${item.case_id}/resolution/create`}>Submit</ActionLink>
             )}
@@ -436,7 +536,44 @@ function WorkflowActions({
                     {item.resolution_status === 'Denied' ? 'Revise and Resubmit' : 'Revise'}
                 </ActionLink>
             )}
-        </>
+        </div>
+    );
+}
+
+function hasWorkflowCommand(type: WorkflowType, item: WorkflowItem) {
+    return type === 'subpoenas'
+        ? Boolean(item.can_revise || item.can_generate_pdf)
+        : Boolean(item.can_submit || item.can_revise);
+}
+
+function workflowHref(type: WorkflowType, item: WorkflowItem, returnUrl: string) {
+    if (type === 'resolutions' && item.resolution_id) {
+        return `/resolutions/${item.resolution_id}`;
+    }
+
+    return `/cases/${item.case_id}?return_to=${encodeURIComponent(returnUrl)}`;
+}
+
+function workflowAccessibleLabel(type: WorkflowType, item: WorkflowItem) {
+    return type === 'subpoenas'
+        ? `Open Subpoena case ${item.docket_number}`
+        : `Open Resolution for case ${item.docket_number}`;
+}
+
+function GroupedDetail({
+    label,
+    value,
+    danger = false,
+}: {
+    label: string;
+    value?: string | null;
+    danger?: boolean;
+}) {
+    return (
+        <p className={`mt-1.5 first:mt-0 ${danger ? 'text-red-800' : ''}`}>
+            <span className="metadata-text mr-1">{label}:</span>
+            <span>{value || '-'}</span>
+        </p>
     );
 }
 
@@ -458,7 +595,10 @@ function Detail({ label, value }: { label: string; value?: string | null }) {
 }
 function ActionLink({ href, children }: { href: string; children: string }) {
     return (
-        <Link href={href} className="action-link">
+        <Link
+            href={href}
+            className="btn btn-secondary btn-compact max-w-full flex-none whitespace-normal"
+        >
             {children}
         </Link>
     );

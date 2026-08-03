@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 type Props = {
     eyebrow?: string;
     title: string;
-    description?: string;
+    description?: ReactNode;
     actions?: ReactNode;
 };
 
@@ -13,7 +13,7 @@ export default function PageHeader({ eyebrow, title, description, actions }: Pro
             <div className="min-w-0">
                 {eyebrow && <p className="page-eyebrow">{eyebrow}</p>}
                 <h1 className={`${eyebrow ? 'mt-1' : ''} page-title`}>{title}</h1>
-                {description && <p className="page-description mt-1">{description}</p>}
+                {description && <div className="page-description mt-1">{description}</div>}
             </div>
             {actions && <div className="page-actions shrink-0">{actions}</div>}
         </header>

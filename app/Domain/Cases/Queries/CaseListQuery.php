@@ -47,7 +47,7 @@ class CaseListQuery
     public function paginate(User $user, Request $request): LengthAwarePaginator
     {
         $parameters = $this->parameters($user, $request);
-        $query = LegalCase::query()->with([
+        $query = $this->visibleTo($user)->with([
             'assignedProsecutor.staffProfile',
             'createdBy.staffProfile',
             'offenses' => fn ($query) => $query->orderBy('name'),
@@ -55,7 +55,6 @@ class CaseListQuery
             'resolution',
         ]);
 
-        $this->scope($query, $user);
         $this->search($query, $parameters['search'], $parameters['filter']);
         $this->sort($query, $parameters['sort'], $parameters['order'], $user);
 
@@ -64,6 +63,15 @@ class CaseListQuery
         $page = min(max($request->integer('page', 1), 1), $lastPage);
 
         return $query->paginate(self::PER_PAGE, page: $page, total: $total)->withQueryString();
+    }
+
+    /** @return Builder<LegalCase> */
+    public function visibleTo(User $user): Builder
+    {
+        $query = LegalCase::query();
+        $this->scope($query, $user);
+
+        return $query;
     }
 
     /**

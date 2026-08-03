@@ -29,6 +29,16 @@ class OffenseManagementTest extends TestCase
             'law_reference' => 'Article 310',
         ]);
 
+        $this->actingAs($admin)->get('/admin/offenses')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('offenses.data', 10)
+                ->where('offenses.per_page', 10)
+                ->where('offenses.from', 1)
+                ->where('offenses.to', 10)
+                ->where('offenses.total', 13)
+                ->where('offenses.data.0.name', 'Qualified Theft'));
+
         $this->actingAs($admin)->get('/admin/offenses?search=Qualified')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page

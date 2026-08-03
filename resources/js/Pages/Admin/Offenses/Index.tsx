@@ -1,9 +1,14 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import ConfirmationDialog from '../../../Components/ConfirmationDialog';
+import EmptyState from '../../../Components/EmptyState';
 import PageHeader from '../../../Components/PageHeader';
 import Pagination, { type PaginationLink } from '../../../Components/Pagination';
+import StickyDataset from '../../../Components/StickyDataset';
+import { useToast } from '../../../Components/toast';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
+import useUnsavedChanges from '../../../hooks/useUnsavedChanges';
 
 type Offense = {
     id: string;
@@ -25,8 +30,11 @@ type Props = {
 };
 
 export default function Index({ offenses, filters, catalog_notice }: Props) {
+    const toast = useToast();
     const [search, setSearch] = useState(filters.search);
     const [selected, setSelected] = useState<Offense | null>(null);
+    const [pendingDeletion, setPendingDeletion] = useState<Offense | null>(null);
+    const [activeOperation, setActiveOperation] = useState<'save' | 'delete' | null>(null);
     const {
         data,
         setData,
@@ -35,9 +43,11 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
         delete: destroy,
         processing,
         errors,
-        reset,
         clearErrors,
+        isDirty,
+        setDefaults,
     } = useForm({ name: '', law_reference: '', delete_error: '' });
+    const { allowNextVisit, confirmDiscard } = useUnsavedChanges(isDirty && !processing);
 
     function filter(event: FormEvent) {
         event.preventDefault();
@@ -46,9 +56,17 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
 
     function save(event: FormEvent) {
         event.preventDefault();
+        if (processing) return;
+
+        setActiveOperation('save');
+        allowNextVisit();
         const options = {
             preserveScroll: true,
-            onSuccess: clearSelection,
+            onSuccess: () => {
+                toast.success(selected ? 'Crime updated.' : 'Crime added.');
+                clearSelection();
+            },
+            onFinish: () => setActiveOperation(null),
         };
 
         if (selected) {
@@ -60,38 +78,55 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
     }
 
     function edit(offense: Offense) {
-        setSelected(offense);
-        setData({
+        if (!confirmDiscard()) return;
+
+        const values = {
             name: offense.name,
             law_reference: offense.law_reference ?? '',
             delete_error: '',
-        });
+        };
+        setSelected(offense);
+        setDefaults(values);
+        setData(values);
         clearErrors();
         document.getElementById('crime-name')?.focus();
     }
 
     function clearSelection() {
+        const values = { name: '', law_reference: '', delete_error: '' };
         setSelected(null);
-        reset();
+        setDefaults(values);
+        setData(values);
         clearErrors();
     }
 
-    function deleteOffense(offense: Offense) {
-        if (offense.cases_count > 0) return;
-        if (!window.confirm(`Delete ${offense.name}? This action cannot be undone.`)) return;
+    function cancelSelection() {
+        if (confirmDiscard()) clearSelection();
+    }
 
+    function deleteOffense(offense: Offense) {
+        if (offense.cases_count > 0 || processing) return;
+
+        setActiveOperation('delete');
         destroy(`/admin/offenses/${offense.id}`, {
             preserveScroll: true,
             onSuccess: () => {
+                toast.success('Crime deleted.');
                 if (selected?.id === offense.id) clearSelection();
+            },
+            onFinish: () => {
+                setActiveOperation(null);
+                setPendingDeletion(null);
             },
         });
     }
 
+    const saving = processing && activeOperation === 'save';
+
     return (
         <AuthenticatedLayout>
             <Head title="Manage Crimes" />
-            <section className="space-y-6">
+            <section className="page-stack">
                 <PageHeader
                     eyebrow="Administrator"
                     title="Manage Crimes"
@@ -101,8 +136,8 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
                 <p className="notice notice-warning">{catalog_notice}</p>
 
                 <div className="grid min-w-0 gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
-                    <form onSubmit={save} className="surface h-fit p-4">
-                        <div className="panel-header -mx-4 -mt-4 px-4 py-3">
+                    <form onSubmit={save} aria-busy={saving} className="surface surface-body h-fit">
+                        <div className="panel-header -mx-4 -mt-4">
                             <h2 className="panel-title">{selected ? 'Edit Crime' : 'Add Crime'}</h2>
                             {selected && (
                                 <p className="mt-1 text-xs text-slate-600">
@@ -118,11 +153,17 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
                             id="crime-name"
                             className="input mt-2"
                             value={data.name}
+                            aria-invalid={errors.name ? true : undefined}
+                            aria-describedby={errors.name ? 'crime-name-error' : undefined}
                             onChange={(event) => setData('name', event.target.value)}
                             maxLength={255}
                             required
                         />
-                        {errors.name && <p className="field-error">{errors.name}</p>}
+                        {errors.name && (
+                            <p id="crime-name-error" className="field-error" role="alert">
+                                {errors.name}
+                            </p>
+                        )}
 
                         <label className="field-label mt-4 block" htmlFor="law-reference">
                             Law Reference
@@ -131,21 +172,33 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
                             id="law-reference"
                             className="input mt-2"
                             value={data.law_reference}
+                            aria-invalid={errors.law_reference ? true : undefined}
+                            aria-describedby={
+                                errors.law_reference ? 'law-reference-error' : undefined
+                            }
                             onChange={(event) => setData('law_reference', event.target.value)}
                             maxLength={255}
                         />
                         {errors.law_reference && (
-                            <p className="field-error">{errors.law_reference}</p>
+                            <p id="law-reference-error" className="field-error" role="alert">
+                                {errors.law_reference}
+                            </p>
                         )}
 
                         <div className="mt-5 flex flex-wrap gap-2">
                             <button type="submit" disabled={processing} className="btn btn-primary">
-                                {selected ? 'Save Changes' : 'Add Crime'}
+                                {saving
+                                    ? selected
+                                        ? 'Saving...'
+                                        : 'Adding...'
+                                    : selected
+                                      ? 'Save Changes'
+                                      : 'Add Crime'}
                             </button>
                             {selected && (
                                 <button
                                     type="button"
-                                    onClick={clearSelection}
+                                    onClick={cancelSelection}
                                     className="btn btn-secondary"
                                 >
                                     Cancel
@@ -154,120 +207,163 @@ export default function Index({ offenses, filters, catalog_notice }: Props) {
                         </div>
                     </form>
 
-                    <div className="surface min-w-0 overflow-hidden">
-                        <form
-                            onSubmit={filter}
-                            className="filter-panel grid gap-3 rounded-none border-x-0 border-t-0 p-4 md:grid-cols-[minmax(220px,1fr)_auto]"
+                    <div className="surface sticky-table-surface min-w-0">
+                        <StickyDataset
+                            stickyControls={false}
+                            controls={
+                                <form
+                                    onSubmit={filter}
+                                    className="filter-panel grid gap-3 rounded-none border-x-0 border-t-0 md:grid-cols-[minmax(220px,32rem)_auto] md:justify-between"
+                                >
+                                    <label className="field-label">
+                                        Search
+                                        <input
+                                            className="input mt-2"
+                                            value={search}
+                                            onChange={(event) => setSearch(event.target.value)}
+                                        />
+                                    </label>
+                                    <button type="submit" className="btn btn-secondary self-end">
+                                        Apply
+                                    </button>
+                                </form>
+                            }
                         >
-                            <label className="field-label">
-                                Search
-                                <input
-                                    className="input mt-2"
-                                    value={search}
-                                    onChange={(event) => setSearch(event.target.value)}
-                                />
-                            </label>
-                            <button type="submit" className="btn btn-secondary self-end">
-                                Apply
-                            </button>
-                        </form>
+                            {errors.delete_error && (
+                                <p
+                                    role="alert"
+                                    className="notice notice-danger rounded-none border-x-0 border-t-0"
+                                >
+                                    {errors.delete_error}
+                                </p>
+                            )}
 
-                        {errors.delete_error && (
-                            <p
-                                role="alert"
-                                className="notice notice-danger rounded-none border-x-0 border-t-0"
+                            <div
+                                className="table-scroll sticky-table-scroll"
+                                tabIndex={0}
+                                role="region"
+                                aria-label="Crime catalog table"
                             >
-                                {errors.delete_error}
-                            </p>
-                        )}
-
-                        <div
-                            className="table-scroll"
-                            tabIndex={0}
-                            role="region"
-                            aria-label="Crime catalog table"
-                        >
-                            <table className="min-w-[640px] w-full text-left text-sm">
-                                <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
-                                    <tr>
-                                        <th className="px-4 py-3 font-semibold">Crime</th>
-                                        <th className="px-4 py-3 font-semibold">Law Reference</th>
-                                        <th className="px-4 py-3 font-semibold">Cases</th>
-                                        <th className="px-4 py-3 font-semibold">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {offenses.data.map((offense) => (
-                                        <tr
-                                            key={offense.id}
-                                            className="border-b border-slate-100 align-top"
-                                        >
-                                            <td className="px-4 py-3 font-medium text-slate-950">
-                                                {offense.name}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                {offense.law_reference ?? '-'}
-                                            </td>
-                                            <td className="px-4 py-3">{offense.cases_count}</td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex min-w-max items-start gap-3">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => edit(offense)}
-                                                        className="action-link"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => deleteOffense(offense)}
-                                                        disabled={
-                                                            offense.cases_count > 0 || processing
-                                                        }
-                                                        aria-describedby={
-                                                            offense.cases_count > 0
-                                                                ? `crime-delete-${offense.id}`
-                                                                : undefined
-                                                        }
-                                                        className="font-semibold text-red-700 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:text-slate-400"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                </div>
-                                                {offense.cases_count > 0 && (
-                                                    <p
-                                                        id={`crime-delete-${offense.id}`}
-                                                        className="mt-1 max-w-52 text-xs text-slate-600"
-                                                    >
-                                                        Referenced Crimes cannot be deleted.
-                                                    </p>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {offenses.data.length === 0 && (
+                                <table className="data-table sticky-table-header min-w-[640px]">
+                                    <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                                         <tr>
-                                            <td
-                                                colSpan={4}
-                                                className="px-4 py-8 text-center text-slate-600"
-                                            >
-                                                No crimes found.
-                                            </td>
+                                            <th className="table-heading">Crime</th>
+                                            <th className="table-heading">Law Reference</th>
+                                            <th className="table-heading text-right">Cases</th>
+                                            <th className="table-heading">Actions</th>
                                         </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        {offenses.data.map((offense) => (
+                                            <tr
+                                                key={offense.id}
+                                                className="data-row border-b border-slate-100 align-top"
+                                            >
+                                                <td className="table-cell table-cell-primary">
+                                                    {offense.name}
+                                                </td>
+                                                <td className="table-cell">
+                                                    {offense.law_reference ?? '-'}
+                                                </td>
+                                                <td className="table-cell table-cell-numeric">
+                                                    {offense.cases_count}
+                                                </td>
+                                                <td className="table-cell table-cell-actions">
+                                                    <div className="action-group min-w-max items-start">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => edit(offense)}
+                                                            className="btn btn-secondary btn-compact"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setPendingDeletion(offense)
+                                                            }
+                                                            disabled={
+                                                                offense.cases_count > 0 ||
+                                                                processing
+                                                            }
+                                                            aria-describedby={
+                                                                offense.cases_count > 0
+                                                                    ? `crime-delete-${offense.id}`
+                                                                    : undefined
+                                                            }
+                                                            className="btn btn-danger-outline btn-compact"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                    {offense.cases_count > 0 && (
+                                                        <p
+                                                            id={`crime-delete-${offense.id}`}
+                                                            className="mt-1 max-w-52 text-xs text-slate-600"
+                                                        >
+                                                            Referenced Crimes cannot be deleted.
+                                                        </p>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {offenses.data.length === 0 && (
+                                            <tr>
+                                                <td colSpan={4} className="p-0">
+                                                    <EmptyState
+                                                        title={
+                                                            filters.search
+                                                                ? 'No crimes match the current search.'
+                                                                : 'No crimes have been configured.'
+                                                        }
+                                                        description={
+                                                            filters.search
+                                                                ? 'Clear the search to review the complete Crime catalog.'
+                                                                : 'Use the Add Crime form to configure the approved catalog.'
+                                                        }
+                                                        action={
+                                                            filters.search ? (
+                                                                <a
+                                                                    href="/admin/offenses"
+                                                                    className="btn btn-secondary"
+                                                                >
+                                                                    Clear search
+                                                                </a>
+                                                            ) : undefined
+                                                        }
+                                                    />
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
 
-                        <Pagination
-                            links={offenses.links}
-                            from={offenses.from}
-                            to={offenses.to}
-                            total={offenses.total}
-                            ariaLabel="Crime catalog pagination"
-                        />
+                            <Pagination
+                                links={offenses.links}
+                                from={offenses.from}
+                                to={offenses.to}
+                                total={offenses.total}
+                                ariaLabel="Crime catalog pagination"
+                                itemLabel="crimes"
+                            />
+                        </StickyDataset>
                     </div>
                 </div>
+                <ConfirmationDialog
+                    open={pendingDeletion !== null}
+                    title="Delete Crime"
+                    description={
+                        pendingDeletion
+                            ? `Delete ${pendingDeletion.name}? This action cannot be undone.`
+                            : ''
+                    }
+                    confirmLabel="Delete Crime"
+                    destructive
+                    busy={processing}
+                    onCancel={() => setPendingDeletion(null)}
+                    onConfirm={() => pendingDeletion && deleteOffense(pendingDeletion)}
+                />
             </section>
         </AuthenticatedLayout>
     );

@@ -11,6 +11,11 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class SubpoenaReviewQuery
 {
+    public function countPendingFor(User $reviewer): int
+    {
+        return $this->baseQuery($reviewer)->count();
+    }
+
     public function hasPendingFor(User $reviewer): bool
     {
         return $this->baseQuery($reviewer)->exists();

@@ -8,6 +8,7 @@ use App\Domain\Cases\Enums\PartyRole;
 use App\Domain\Cases\Enums\SubpoenaStatus;
 use App\Domain\Cases\Exceptions\CaseDataInvariantException;
 use App\Domain\Cases\Queries\SubpoenaReviewQuery;
+use App\Domain\Dashboard\Queries\OperationalDashboardQuery;
 use App\Http\Requests\Cases\ApproveSubpoenaRequest;
 use App\Http\Requests\Cases\DenySubpoenaRequest;
 use App\Models\CaseParty;
@@ -21,7 +22,7 @@ use Inertia\Response;
 
 class SubpoenaReviewController extends Controller
 {
-    public function index(Request $request, SubpoenaReviewQuery $reviews, CaseAccess $access): Response
+    public function index(Request $request, SubpoenaReviewQuery $reviews, CaseAccess $access, OperationalDashboardQuery $operationalDashboard): Response
     {
         abort_unless($access->canAccessReviewQueue($request->user()), 403);
 
@@ -35,6 +36,7 @@ class SubpoenaReviewController extends Controller
                 'sort' => (string) $request->query('sort', 'date'),
                 'direction' => (string) $request->query('direction', 'asc'),
             ],
+            'operational_metrics' => $operationalDashboard->landingMetrics($request->user()),
         ]);
     }
 

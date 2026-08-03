@@ -4,7 +4,7 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite",
+        "dev": "concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"node scripts/dev-logs.mjs\" \"vite\" --names=server,queue,logs,vite --kill-others",
         "format": "prettier --write resources/js",
         "lint": "eslint resources/js tests/e2e playwright.config.ts --max-warnings=0",
         "test:e2e": "playwright test",
