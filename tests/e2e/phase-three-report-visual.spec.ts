@@ -19,8 +19,8 @@ test.use({
 });
 
 test.skip(
-    process.platform !== 'linux',
-    'Reports visual baselines are authoritative only in the CI Linux Chromium environment.',
+    process.platform !== 'linux' || process.env.REPORT_VISUAL_CI !== '1',
+    'Reports visual baselines run only in the pinned CI Linux Chromium container.',
 );
 
 async function login(page: Page) {

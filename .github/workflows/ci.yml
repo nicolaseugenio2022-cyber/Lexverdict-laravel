@@ -128,3 +128,24 @@ jobs:
           php artisan db:seed --class=Database\\Seeders\\M8E2ESeeder --env=testing --force
           npx playwright install --with-deps chromium
           npm run test:e2e
+
+      - name: Reports visual regression
+        run: |
+          php artisan migrate:fresh --env=testing --force
+          php artisan db:seed --class=Database\\Seeders\\M8E2ESeeder --env=testing --force
+          php artisan serve --env=testing --host=127.0.0.1 --port=8008 > storage/logs/report-visual-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8008/up > /dev/null; then break; fi
+            if [ "$attempt" -eq 30 ]; then cat storage/logs/report-visual-server.log; exit 1; fi
+            sleep 1
+          done
+          docker run --rm --network host \
+            --volume "$PWD:/work" \
+            --workdir /work \
+            --env CI=true \
+            --env PLAYWRIGHT_EXTERNAL_SERVER=1 \
+            --env REPORT_VISUAL_CI=1 \
+            mcr.microsoft.com/playwright:v1.61.1-noble \
+            npx playwright test tests/e2e/phase-three-report-visual.spec.ts --workers=1

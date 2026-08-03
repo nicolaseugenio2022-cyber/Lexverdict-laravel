@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const usesExternalServer = process.env.PLAYWRIGHT_EXTERNAL_SERVER === '1';
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:8008';
+
 export default defineConfig({
     testDir: './tests/e2e',
     fullyParallel: false,
@@ -8,20 +11,22 @@ export default defineConfig({
     workers: process.env.CI ? 1 : undefined,
     reporter: process.env.CI ? [['html', { open: 'never' }], ['list']] : 'list',
     use: {
-        baseURL: 'http://127.0.0.1:8008',
+        baseURL,
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
     },
-    webServer: {
-        command: 'php artisan serve --env=testing --host=127.0.0.1 --port=8008',
-        env: {
-            ...process.env,
-            QUEUE_CONNECTION: 'database',
-        },
-        url: 'http://127.0.0.1:8008/up',
-        reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
-    },
+    webServer: usesExternalServer
+        ? undefined
+        : {
+              command: 'php artisan serve --env=testing --host=127.0.0.1 --port=8008',
+              env: {
+                  ...process.env,
+                  QUEUE_CONNECTION: 'database',
+              },
+              url: 'http://127.0.0.1:8008/up',
+              reuseExistingServer: !process.env.CI,
+              timeout: 120_000,
+          },
     projects: [
         {
             name: 'chromium',
