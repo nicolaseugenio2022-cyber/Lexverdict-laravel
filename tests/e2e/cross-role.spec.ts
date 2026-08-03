@@ -424,7 +424,9 @@ test('each staff role receives only its approved navigation and route access', a
             ),
         ).toBe(true);
     }
-    await expect(prosecutorCasesTable.getByText('Due for Hearing', { exact: true })).toBeVisible();
+    await expect(
+        prosecutorCasesTable.getByText('Due for Hearing', { exact: true }).first(),
+    ).toBeVisible();
     await expect(prosecutorCasesTable.getByText('Resolved', { exact: true })).toBeVisible();
     await page.getByLabel('Search', { exact: true }).fill('Qualified');
     await page.getByRole('button', { name: 'Search' }).click();
@@ -708,7 +710,6 @@ test('queued Subpoena document lifecycle refreshes once and stops polling when r
             'queue:work',
             'database',
             '--queue=documents',
-            '--once',
             '--stop-when-empty',
             '--timeout=120',
             '--env=testing',

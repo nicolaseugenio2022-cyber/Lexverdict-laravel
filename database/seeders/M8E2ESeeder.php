@@ -79,6 +79,23 @@ class M8E2ESeeder extends Seeder
                     $this->party('Respondent', 'Pending', 'Respondent', 'Male'),
                 ],
             ], $secretary);
+
+            foreach ([
+                ['2026-07-12', '2026-07-25 09:30:00', '2026-07-26 09:30:00', 'Second'],
+                ['2026-07-13', '2026-07-27 09:30:00', '2026-07-28 09:30:00', 'Third'],
+            ] as [$date, $firstHearing, $secondHearing, $partyName]) {
+                app(CreateCase::class)->create([
+                    'date' => $date,
+                    'hearing_date_1' => $firstHearing,
+                    'hearing_date_2' => $secondHearing,
+                    'police_station' => 'Cabanatuan City Police Station',
+                    'offense_ids' => [$offense->id],
+                    'parties' => [
+                        $this->party('Complainant', $partyName, 'Complainant', 'Female'),
+                        $this->party('Respondent', $partyName, 'Respondent', 'Male'),
+                    ],
+                ], $secretary);
+            }
         });
     }
 

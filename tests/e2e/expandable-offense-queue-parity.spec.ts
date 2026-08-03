@@ -145,7 +145,7 @@ async function collectionGeometry(row: Locator) {
     const docket = row.locator('td').first().locator('.table-cell-primary');
     const collapsedRowHeight = (await row.boundingBox())!.height;
     const collapsedListHeight = (await list.boundingBox())!.height;
-    const buttonHeight = (await button.boundingBox())!.height;
+    const buttonClass = await button.getAttribute('class');
     const docketGap = await list.evaluate((element, docketSelector) => {
         const docketElement = element.closest('td')?.querySelector(docketSelector);
         if (!docketElement) return Number.NaN;
@@ -160,7 +160,7 @@ async function collectionGeometry(row: Locator) {
         expandedRowHeight: (await row.boundingBox())!.height,
         collapsedListHeight,
         expandedListHeight: (await list.boundingBox())!.height,
-        buttonHeight,
+        buttonClass,
         docketGap,
         docket,
         button,
@@ -297,7 +297,8 @@ test('Secretary verification queues use independent compact offense collections'
     expect(collectionGrowth).toBeGreaterThan(0);
     expect(rowGrowth).toBeGreaterThanOrEqual(0);
     expect(rowGrowth).toBeLessThanOrEqual(collectionGrowth + 0.5);
-    expect(secretaryCollection.buttonHeight).toBe(casesCollection.buttonHeight);
+    expect(casesCollection.buttonClass).toMatch(/\bbtn\b.*\bbtn-ghost\b.*\bbtn-compact\b/);
+    expect(secretaryCollection.buttonClass).toBe(casesCollection.buttonClass);
     expectGeometryUnchanged(secretaryBeforeGeometry, await geometry(secretaryTable));
     await expect(secretaryRow.getByText('Crime/Case', { exact: true })).toHaveCount(0);
     await expect(subpoenaButton).toHaveText('Show less');

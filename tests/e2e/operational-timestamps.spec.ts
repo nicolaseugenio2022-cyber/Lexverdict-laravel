@@ -97,7 +97,7 @@ test('Subpoena review and document history preserve raw timestamp values', async
     test.setTimeout(60_000);
     await page.setViewportSize({ width: 768, height: 1024 });
     await login(page, 'e2e_prosecutor', '/subpoena-reviews');
-    await page.getByRole('link', { name: 'Review', exact: true }).click();
+    await page.getByRole('link', { name: 'Review', exact: true }).first().click();
 
     await expectOperationalTimestamps(page.locator('main'), 1);
     for (const label of ['1st Hearing', '2nd Hearing']) {

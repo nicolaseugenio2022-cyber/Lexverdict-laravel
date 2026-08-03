@@ -123,9 +123,13 @@ test('Audit detail preserves exact evidence while clarifying target and transiti
         '/admin/audit?search=subpoena.approved&filter=action&sort=timestamp&order=desc',
     );
 
-    const eventLink = page.getByRole('link', {
-        name: 'View details for Subpoena Approved audit event',
-    });
+    const eventLink = page
+        .getByRole('region', { name: 'Audit History' })
+        .locator('article')
+        .first()
+        .getByRole('link', {
+            name: 'View details for Subpoena Approved audit event',
+        });
     await expect(eventLink).toBeVisible();
     await eventLink.click();
 
