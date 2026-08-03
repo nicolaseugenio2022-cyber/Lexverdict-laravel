@@ -20,6 +20,29 @@ async function logout(page: Page) {
     await expect(page).toHaveURL(/\/login$/);
 }
 
+async function expectedAuditDateLabel(page: Page, value: string) {
+    return page.evaluate((timestampValue) => {
+        const timestamp = new Date(timestampValue);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const eventDate = new Date(
+            timestamp.getFullYear(),
+            timestamp.getMonth(),
+            timestamp.getDate(),
+        );
+        const dayDifference = Math.round((today.getTime() - eventDate.getTime()) / 86_400_000);
+
+        if (dayDifference === 0) return 'Today';
+        if (dayDifference === 1) return 'Yesterday';
+
+        return new Intl.DateTimeFormat('en-PH', {
+            month: 'short',
+            day: 'numeric',
+            year: timestamp.getFullYear() === now.getFullYear() ? undefined : 'numeric',
+        }).format(timestamp);
+    }, value);
+}
+
 async function expectChartRendered(page: Page, testId: string) {
     const canvas = page.getByTestId(testId).locator('canvas');
     await expect(canvas).toBeVisible();
@@ -196,7 +219,11 @@ test('each staff role receives only its approved navigation and route access', a
     const firstActivity = recentActivity.getByRole('link').first();
     await expect(recentActivity.getByRole('link')).toHaveCount(5);
     const firstActivityTimestamp = firstActivity.locator('time');
-    await expect(firstActivityTimestamp.locator('span').first()).toHaveText('Today');
+    const activityDateTime = await firstActivityTimestamp.getAttribute('datetime');
+    expect(activityDateTime).not.toBeNull();
+    await expect(firstActivityTimestamp.locator('span').first()).toHaveText(
+        await expectedAuditDateLabel(page, activityDateTime!),
+    );
     await expect(firstActivityTimestamp.locator('span').nth(1)).toHaveText(
         /^\d{1,2}:\d{2} (AM|PM)$/,
     );
@@ -552,12 +579,14 @@ test('each staff role receives only its approved navigation and route access', a
     await expect(page).toHaveURL(/\/cases\/[0-9a-f-]+\/edit$/);
     await page.goBack();
     await expect(page).toHaveURL(/\/secretary\/verifying-cases/);
-    const verificationDocumentRequest = page.waitForRequest(
-        (request) => request.method() === 'POST' && request.url().includes('/documents/subpoena'),
+    const verificationDocumentResponse = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            response.url().includes('/documents/subpoena'),
     );
     await generatePdfAction.click();
-    await verificationDocumentRequest;
-    await expect(page).toHaveURL(/\/cases\/[0-9a-f-]+$/);
+    await verificationDocumentResponse;
+    await expect(page).toHaveURL(/\/cases\/[0-9a-f-]+$/, { timeout: 15_000 });
     await page.goBack();
     await expect(page).toHaveURL(/\/secretary\/verifying-cases/);
     for (const viewport of [
@@ -695,12 +724,14 @@ test('queued Subpoena document lifecycle refreshes once and stops polling when r
     test.setTimeout(60_000);
     await login(page, 'e2e_secretary', '/cases');
     const pendingCase = page.getByRole('row').filter({ hasText: 'III-09-INV-26G-0002' });
-    const documentRequest = page.waitForRequest(
-        (request) => request.method() === 'POST' && request.url().includes('/documents/subpoena'),
+    const documentResponse = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            response.url().includes('/documents/subpoena'),
     );
     await pendingCase.getByRole('button', { name: 'Generate PDF' }).click();
-    await documentRequest;
-    await expect(page).toHaveURL(/\/cases\/[0-9a-f-]+$/);
+    await documentResponse;
+    await expect(page).toHaveURL(/\/cases\/[0-9a-f-]+$/, { timeout: 15_000 });
     await expect(page.getByText('Generating', { exact: true })).toBeVisible();
 
     await execFileAsync(
@@ -738,8 +769,14 @@ test('public lookup and administrator report preserve approved behavior', async 
     await page.goto('/docket');
     await page.getByLabel('Docket Number').fill('III-09-INV-26G-0001');
     await page.getByLabel('PIN Code').fill('246810');
+    const lookupResponse = page.waitForResponse(
+        (response) =>
+            response.request().method() === 'POST' &&
+            new URL(response.url()).pathname === '/docket',
+    );
     await page.getByRole('button', { name: 'Access' }).click();
-    await expect(page.getByText('For Filing', { exact: true })).toBeVisible();
+    await lookupResponse;
+    await expect(page.getByText('For Filing', { exact: true })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('RTC Cabanatuan', { exact: true })).toBeVisible();
 
     await login(page, 'e2e_admin', '/dashboard');

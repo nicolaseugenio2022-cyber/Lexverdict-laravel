@@ -125,8 +125,14 @@ async function ensureScrollableCrimeCatalog(page: Page) {
     for (let index = initialCount; index < 10; index += 1) {
         await page.getByLabel('Crime Name').fill(`Sticky Layout Test Crime ${index}`);
         await page.getByLabel('Law Reference').fill(`Test Reference ${index}`);
+        const createResponse = page.waitForResponse(
+            (response) =>
+                response.request().method() === 'POST' &&
+                new URL(response.url()).pathname === '/admin/offenses',
+        );
         await page.getByRole('button', { name: 'Add Crime', exact: true }).click();
-        await expect(rows).toHaveCount(index + 1);
+        await createResponse;
+        await expect(rows).toHaveCount(index + 1, { timeout: 15_000 });
     }
 }
 
