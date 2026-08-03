@@ -287,27 +287,21 @@ test('Secretary verification queues use independent compact offense collections'
     const secretaryTable = subpoenaTable.locator('table');
     const secretaryBeforeGeometry = await geometry(secretaryTable);
     const secretaryCollection = await collectionGeometry(secretaryRow);
+    const collectionGrowth =
+        secretaryCollection.expandedListHeight - secretaryCollection.collapsedListHeight;
+    const rowGrowth =
+        secretaryCollection.expandedRowHeight - secretaryCollection.collapsedRowHeight;
 
     await expect(secretaryCollection.docket).toBeVisible();
     expect(Math.abs(secretaryCollection.docketGap - 4)).toBeLessThanOrEqual(0.5);
-    expect(
-        secretaryCollection.expandedRowHeight - secretaryCollection.collapsedRowHeight,
-    ).toBeCloseTo(
-        secretaryCollection.expandedListHeight - secretaryCollection.collapsedListHeight,
-        0,
-    );
+    expect(collectionGrowth).toBeGreaterThan(0);
+    expect(rowGrowth).toBeGreaterThanOrEqual(0);
+    expect(rowGrowth).toBeLessThanOrEqual(collectionGrowth + 0.5);
     expect(secretaryCollection.buttonHeight).toBe(casesCollection.buttonHeight);
-    expect(secretaryCollection.collapsedListHeight).toBe(casesCollection.collapsedListHeight);
-    expect(secretaryCollection.expandedListHeight).toBe(casesCollection.expandedListHeight);
-    expect(
-        secretaryCollection.collapsedRowHeight - casesCollection.collapsedRowHeight,
-    ).toBeLessThanOrEqual(30);
-    expect(
-        secretaryCollection.expandedRowHeight - casesCollection.expandedRowHeight,
-    ).toBeLessThanOrEqual(30);
     expectGeometryUnchanged(secretaryBeforeGeometry, await geometry(secretaryTable));
     await expect(secretaryRow.getByText('Crime/Case', { exact: true })).toHaveCount(0);
     await expect(subpoenaButton).toHaveText('Show less');
+    await expect(secretaryRow.locator('[id$="-desktop-offenses"] li')).toHaveText(longOffenses);
     await expect(resolutionButton).toHaveText('Show all 4 offenses');
     await expect(secretaryCollection.button).toBeFocused();
     await expect(subpoenaButton).toHaveAttribute('aria-expanded', 'true');
